@@ -1,114 +1,333 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+export default function Game() {
+  const [game, setGame] = useState(null);
+  const [selectedLetters, setSelectedLetters] = useState([]);
+  const [foundWords, setFoundWords] = useState([]);
+  const [attemptSequence, setAttemptSequence] = useState([]); 
+  const [message, setMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false); 
+  const [colorMapping, setColorMapping] = useState({});
+  const [lastTap, setLastTap] = useState(0); 
+  const [playerName, setPlayerName] = useState(""); 
+  const [leaderboard, setLeaderboard] = useState([]); 
+  const [puzzleComplete, setPuzzleComplete] = useState(false); // Prevent extra attempts
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  // Emoji system for scoring
+  const spangramEmoji = "🟡"; // Yellow for spangram
+  const correctEmoji = "🟢";  // Green for non-spangram words
+  const failEmoji = "⚫";     // Black for failed attempts
 
-export default function Home() {
+  // Colors for puzzle highlighting
+  const spangramColor = "#FFD700"; // Gold
+  const otherColors = [
+    "#a1887f", "#90a4ae", "#81c784", "#ce93d8",
+    "#ffab91", "#b0bec5", "#aed581", "#ba68c8", "#4db6ac"
+  ];
+
+  useEffect(() => {
+    fetchGameData();
+    fetchLeaderboard();
+  }, []);
+
+  const fetchGameData = () => {
+    axios.get("/api/game")
+      .then(response => {
+        setGame(response.data);
+        const mapping = {};
+        response.data.valid_words.forEach((word, index) => {
+          mapping[word] = word === response.data.spangram
+            ? spangramColor
+            : otherColors[(index - 1) % otherColors.length];
+        });
+        setColorMapping(mapping);
+      })
+      .catch(error => console.error("Error fetching game:", error));
+  };
+
+  const fetchLeaderboard = () => {
+    axios.get("/api/leaderboard")
+      .then(response => setLeaderboard(response.data))
+      .catch(error => console.error("Error fetching leaderboard:", error));
+  };
+
+  // Double-tap detection
+  const handleLetterClick = (letter, row, col) => {
+    if (puzzleComplete) return; // No more clicks if puzzle is solved
+    const currentTime = new Date().getTime();
+    if (currentTime - lastTap < 300) {
+      submitWord();
+    } else {
+      setSelectedLetters([...selectedLetters, { letter, row, col }]);
+      setLastTap(currentTime);
+    }
+  };
+
+  const submitWord = () => {
+    if (puzzleComplete || !game) return;
+
+    const word = selectedLetters.map(l => l.letter).join("");
+
+    let nextFoundWords = [...foundWords];
+    let nextAttemptSequence = [...attemptSequence];
+
+    if (game.valid_words.includes(word)) {
+      if (!foundWords.includes(word)) {
+        nextFoundWords.push(word);
+        nextAttemptSequence.push(word); // Append the correct word (green dot)
+        setMessage(`Correct: ${word}`);
+      }
+    } else {
+      nextAttemptSequence.push("FAIL");
+      setMessage(`Incorrect word: ${word}. Try again!`);
+    }
+
+    setFoundWords(nextFoundWords);
+    setAttemptSequence(nextAttemptSequence);
+    setSelectedLetters([]);
+
+    if (nextFoundWords.length === game.valid_words.length) {
+      setPuzzleComplete(true);
+      setTimeout(() => setShowPopup(true), 500);
+    }
+  };
+
+  const getCellColor = (row, col) => {
+    if (!game || !game.word_paths) return undefined;
+    for (let word of foundWords) {
+      const path = game.word_paths[word];
+      if (path && path.some(coord => coord[0] === row && coord[1] === col)) {
+        return colorMapping[word] || undefined;
+      }
+    }
+    return undefined;
+  };
+
+  // Generate raw emoji string (only emojis) for the final score
+  const generateEmojiScore = () => {
+    return attemptSequence.map(attempt => {
+      if (attempt === "FAIL") return failEmoji;
+      return attempt === game?.spangram ? spangramEmoji : correctEmoji;
+    }).join("");
+  };
+
+  const handleShareScore = () => {
+    const emojiScore = generateEmojiScore();
+    const shareText = `Strands Score: ${emojiScore}\nTry it at [Your URL]`;
+    if (navigator.share) {
+      navigator.share({
+        title: "Strands Game",
+        text: shareText,
+        url: "[Your URL]"
+      })
+        .then(() => setMessage("Shared successfully!"))
+        .catch(error => console.error("Error sharing:", error));
+    } else {
+      navigator.clipboard.writeText(shareText)
+        .then(() => setMessage("Score copied to clipboard!"))
+        .catch(err => setMessage("Failed to copy score."));
+    }
+  };
+
+  const submitScore = () => {
+    if (!playerName.trim()) {
+      setMessage("Please enter your name.");
+      return;
+    }
+    const emojiScore = generateEmojiScore();
+    axios.post("/api/submit-score", { name: playerName, score: emojiScore })
+      .then(response => {
+        setMessage("Score submitted successfully!");
+        setLeaderboard(response.data.leaderboard);
+        resetGame();
+      })
+      .catch(error => {
+        console.error("Error submitting score:", error);
+        setMessage("Error submitting score.");
+      });
+  };
+
+  const resetGame = () => {
+    setShowPopup(false);
+    setPlayerName("");
+    setFoundWords([]);
+    setSelectedLetters([]);
+    setAttemptSequence([]);
+    setPuzzleComplete(false);
+    fetchGameData();
+  };
+
+  if (!game) return <p>Loading...</p>;
+
   return (
-    <div
-      className={`${geistSans.variable} ${geistMono.variable} grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]`}
-    >
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/pages/index.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="container">
+      <h1>EID MILAN 1446H</h1>
+      {game ? (
+        <>
+          <p>Game Theme: <b>{game.theme}</b></p>
+          <p style={{ fontWeight: "bold" }}>
+            Progress: {foundWords.length} / {game.valid_words.length} solved
+          </p>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="grid-container">
+            {game.letter_grid.map((row, rowIndex) =>
+              row.map((letter, colIndex) => {
+                const cellColor = getCellColor(rowIndex, colIndex);
+                return (
+                  <button
+                    key={`${rowIndex}-${colIndex}`}
+                    onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
+                    className="letter-button"
+                    style={{ backgroundColor: cellColor || "#fff" }}
+                  >
+                    <span>{letter}</span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
+          <button onClick={submitWord} className="submit-button">Submit Word</button>
+        </>
+      ) : (
+        <p>Loading...</p>
+      )}
+
+      {message && (
+        <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
+          {message}
+        </p>
+      )}
+
+      {showPopup && (
+        <div className="popup">
+          <p>🎉 Puzzle Completed! 🎉</p>
+          <p>Please enter your name to submit your score:</p>
+          <input
+            type="text"
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="Your name"
+          />
+          <button onClick={submitScore} className="submit-button">Submit Score</button>
+          <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+
+      <div className="leaderboard">
+        <h2>Leaderboard</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>NAME</th>
+              <th>SCORE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaderboard.map((entry, index) => (
+              <tr key={index}>
+                <td>{entry.name}</td>
+                <td>{entry.score}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <style jsx>{`
+        .container {
+          text-align: center;
+          padding: 10px;
+        }
+        .grid-container {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 5px;
+          max-width: 400px;
+          margin: 0 auto;
+        }
+        .letter-button {
+          width: 100%;
+          padding-top: 100%;
+          position: relative;
+          border: 1px solid #ccc;
+          background-color: #fff;
+          cursor: pointer;
+        }
+        .letter-button span {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 1.8rem;
+          font-weight: bold;
+        }
+        .submit-button {
+          background-color: #4CAF50;
+          color: white;
+          padding: 15px 20px;
+          font-size: 18px;
+          border: none;
+          cursor: pointer;
+          margin-top: 15px;
+        }
+        .share-button {
+          background-color: #2196F3;
+          color: white;
+          padding: 10px 15px;
+          font-size: 16px;
+          border: none;
+          cursor: pointer;
+          margin-top: 10px;
+          margin-left: 10px;
+        }
+        .popup {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 20px;
+          text-align: center;
+          border: 2px solid #333;
+        }
+        .popup input {
+          padding: 10px;
+          font-size: 16px;
+          margin-top: 10px;
+          width: 80%;
+        }
+        .leaderboard {
+          max-height: 200px;
+          overflow-y: auto;
+          margin-top: 30px;
+          border-top: 1px solid #ccc;
+          padding-top: 10px;
+        }
+        .leaderboard table {
+          width: 100%;
+          border-collapse: collapse;
+        }
+        .leaderboard th, .leaderboard td {
+          border: 1px solid #ddd;
+          padding: 8px;
+          text-align: center;
+        }
+        .leaderboard th {
+          background-color: #f2f2f2;
+          font-weight: bold;
+        }
+        @media (max-width: 600px) {
+          .grid-container {
+            max-width: 90vw;
+          }
+          .letter-button span {
+            font-size: 1.5rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }
