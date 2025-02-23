@@ -5,13 +5,13 @@ export default function Game() {
   const [game, setGame] = useState(null);
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [foundWords, setFoundWords] = useState([]);
-  const [attemptSequence, setAttemptSequence] = useState([]); 
+  const [attemptSequence, setAttemptSequence] = useState([]);
   const [message, setMessage] = useState("");
-  const [showPopup, setShowPopup] = useState(false); 
+  const [showPopup, setShowPopup] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
-  const [lastTap, setLastTap] = useState(0); 
-  const [playerName, setPlayerName] = useState(""); 
-  const [leaderboard, setLeaderboard] = useState([]); 
+  const [lastTap, setLastTap] = useState(0);
+  const [playerName, setPlayerName] = useState("");
+  const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false); // Prevent extra attempts
 
   // Emoji system for scoring
@@ -19,7 +19,7 @@ export default function Game() {
   const correctEmoji = "🟢";  // Green for non-spangram words
   const failEmoji = "⚫";     // Black for failed attempts
 
-  // Colors for puzzle highlighting
+  // Colors for puzzle highlighting (light mode)
   const spangramColor = "#FFD700"; // Gold
   const otherColors = [
     "#a1887f", "#90a4ae", "#81c784", "#ce93d8",
@@ -93,15 +93,16 @@ export default function Game() {
     }
   };
 
+  // Return a color if this cell belongs to a found word
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
       const path = game.word_paths[word];
       if (path && path.some(coord => coord[0] === row && coord[1] === col)) {
-        return colorMapping[word] || undefined;
+        return colorMapping[word] || undefined; // e.g. gold or other highlight
       }
     }
-    return undefined;
+    return undefined; // means unsolved cell
   };
 
   // Generate raw emoji string (only emojis) for the final score
@@ -174,12 +175,18 @@ export default function Game() {
             {game.letter_grid.map((row, rowIndex) =>
               row.map((letter, colIndex) => {
                 const cellColor = getCellColor(rowIndex, colIndex);
+                // If cellColor is undefined (unsolved), let CSS decide (light or dark).
+                // If cellColor is set, apply it inline.
                 return (
                   <button
                     key={`${rowIndex}-${colIndex}`}
                     onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                     className="letter-button"
-                    style={{ backgroundColor: cellColor || "#fff" }}
+                    style={
+                      cellColor
+                        ? { backgroundColor: cellColor }
+                        : {}
+                    }
                   >
                     <span>{letter}</span>
                   </button>
@@ -237,9 +244,12 @@ export default function Game() {
       </div>
 
       <style jsx>{`
+        /* Light mode defaults */
         .container {
           text-align: center;
           padding: 10px;
+          background-color: #fff;
+          color: #000;
         }
         .grid-container {
           display: grid;
@@ -253,8 +263,9 @@ export default function Game() {
           padding-top: 100%;
           position: relative;
           border: 1px solid #ccc;
-          background-color: #fff;
+          /* background-color: #fff;  <-- no forced default, let CSS or inline style handle it */
           cursor: pointer;
+          color: #000; /* text color in light mode */
         }
         .letter-button span {
           position: absolute;
@@ -292,6 +303,7 @@ export default function Game() {
           padding: 20px;
           text-align: center;
           border: 2px solid #333;
+          color: #000;
         }
         .popup input {
           padding: 10px;
@@ -310,7 +322,8 @@ export default function Game() {
           width: 100%;
           border-collapse: collapse;
         }
-        .leaderboard th, .leaderboard td {
+        .leaderboard th,
+        .leaderboard td {
           border: 1px solid #ddd;
           padding: 8px;
           text-align: center;
@@ -319,12 +332,51 @@ export default function Game() {
           background-color: #f2f2f2;
           font-weight: bold;
         }
+
+        /* Mobile responsiveness */
         @media (max-width: 600px) {
           .grid-container {
             max-width: 90vw;
           }
           .letter-button span {
             font-size: 1.5rem;
+          }
+        }
+
+        /* Dark mode overrides */
+        @media (prefers-color-scheme: dark) {
+          .container {
+            background-color: #121212;
+            color: #fff;
+          }
+          .letter-button {
+            background-color: #1e1e1e; /* dark background for unsolved squares */
+            border: 1px solid #444;
+            color: #fff; /* text color in dark mode */
+          }
+          .submit-button {
+            background-color: #388e3c; /* darker green */
+            color: #fff;
+          }
+          .share-button {
+            background-color: #1976d2; /* darker blue */
+            color: #fff;
+          }
+          .popup {
+            background: #2a2a2a;
+            border: 2px solid #555;
+            color: #fff;
+          }
+          .leaderboard th {
+            background-color: #333;
+            color: #fff;
+          }
+          .leaderboard td {
+            color: #fff;
+          }
+          .leaderboard th,
+          .leaderboard td {
+            border-color: #555;
           }
         }
       `}</style>
