@@ -191,8 +191,8 @@ export default function Game() {
           </div>
           <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
           <div className="action-buttons">
-            <button onClick={submitWord} className="submit-button">Submit Word</button>
             <button onClick={clearSelection} className="clear-button">Clear Selection</button>
+            <button onClick={submitWord} className="submit-button">Submit Word</button>
           </div>
         </>
       ) : (
@@ -277,7 +277,7 @@ export default function Game() {
           font-size: 18px;
           border: none;
           cursor: pointer;
-          margin-right: 10px;
+          margin-left: 10px;
         }
         .clear-button {
           background-color: #d32f2f;
