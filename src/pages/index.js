@@ -51,12 +51,10 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Modified letter click: Only add the letter if it hasn't been used yet
+  // Letter click: Only add the letter if it hasn't been used already
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
-    // Check if the cell has already been selected in the current selection.
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
-    // Check if the cell has already been used in a submitted successful word.
     const alreadyUsed = game && foundWords.some(word => {
       const path = game.word_paths[word];
       return path && path.some(coord => coord[0] === row && coord[1] === col);
@@ -70,11 +68,10 @@ export default function Game() {
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
-        nextAttemptSequence.push(word); // Append the correct word (green dot)
+        nextAttemptSequence.push(word); // Append correct word (green dot)
         setMessage(`Correct: ${word}`);
       }
     } else {
@@ -90,7 +87,7 @@ export default function Game() {
     }
   };
 
-  // Clear the current selection without submitting
+  // Clear current selection without submitting
   const clearSelection = () => {
     setSelectedLetters([]);
     setMessage("");
@@ -107,7 +104,7 @@ export default function Game() {
     return undefined;
   };
 
-  // Generate raw emoji string (only emojis) for the final score
+  // Generate raw emoji string (only emojis) for final score
   const generateEmojiScore = () => {
     return attemptSequence.map(attempt => {
       if (attempt === "FAIL") return failEmoji;
@@ -268,24 +265,26 @@ export default function Game() {
           font-weight: bold;
         }
         .action-buttons {
-          margin-top: 15px;
+          display: flex;
+          justify-content: space-between;
+          max-width: 400px;
+          margin: 15px auto;
+          gap: 10px;
+        }
+        .action-buttons button {
+          flex: 1;
+          padding: 15px 0;
+          font-size: 18px;
+          border: none;
+          cursor: pointer;
         }
         .submit-button {
           background-color: #4CAF50;
           color: white;
-          padding: 15px 20px;
-          font-size: 18px;
-          border: none;
-          cursor: pointer;
-          margin-left: 10px;
         }
         .clear-button {
           background-color: #d32f2f;
           color: white;
-          padding: 15px 20px;
-          font-size: 18px;
-          border: none;
-          cursor: pointer;
         }
         .share-button {
           background-color: #2196F3;
@@ -325,7 +324,8 @@ export default function Game() {
           width: 100%;
           border-collapse: collapse;
         }
-        .leaderboard th, .leaderboard td {
+        .leaderboard th,
+        .leaderboard td {
           border: 1px solid #ddd;
           padding: 8px;
           text-align: center;
