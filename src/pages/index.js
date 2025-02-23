@@ -93,16 +93,20 @@ export default function Game() {
     }
   };
 
-  // Return a color if this cell belongs to a found word
+  const clearSelection = () => {
+    setSelectedLetters([]);
+    setMessage("");
+  };
+
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
       const path = game.word_paths[word];
       if (path && path.some(coord => coord[0] === row && coord[1] === col)) {
-        return colorMapping[word] || undefined; // e.g. gold or other highlight
+        return colorMapping[word] || undefined;
       }
     }
-    return undefined; // means unsolved cell
+    return undefined;
   };
 
   // Generate raw emoji string (only emojis) for the final score
@@ -175,18 +179,12 @@ export default function Game() {
             {game.letter_grid.map((row, rowIndex) =>
               row.map((letter, colIndex) => {
                 const cellColor = getCellColor(rowIndex, colIndex);
-                // If cellColor is undefined (unsolved), let CSS decide (light or dark).
-                // If cellColor is set, apply it inline.
                 return (
                   <button
                     key={`${rowIndex}-${colIndex}`}
                     onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                     className="letter-button"
-                    style={
-                      cellColor
-                        ? { backgroundColor: cellColor }
-                        : {}
-                    }
+                    style={cellColor ? { backgroundColor: cellColor } : {}}
                   >
                     <span>{letter}</span>
                   </button>
@@ -196,7 +194,10 @@ export default function Game() {
           </div>
 
           <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
-          <button onClick={submitWord} className="submit-button">Submit Word</button>
+          <div className="action-buttons">
+            <button onClick={submitWord} className="submit-button">Submit Word</button>
+            <button onClick={clearSelection} className="clear-button">Clear Selection</button>
+          </div>
         </>
       ) : (
         <p>Loading...</p>
@@ -263,9 +264,8 @@ export default function Game() {
           padding-top: 100%;
           position: relative;
           border: 1px solid #ccc;
-          /* background-color: #fff;  <-- no forced default, let CSS or inline style handle it */
           cursor: pointer;
-          color: #000; /* text color in light mode */
+          color: #000;
         }
         .letter-button span {
           position: absolute;
@@ -275,6 +275,9 @@ export default function Game() {
           font-size: 1.8rem;
           font-weight: bold;
         }
+        .action-buttons {
+          margin-top: 15px;
+        }
         .submit-button {
           background-color: #4CAF50;
           color: white;
@@ -282,7 +285,15 @@ export default function Game() {
           font-size: 18px;
           border: none;
           cursor: pointer;
-          margin-top: 15px;
+          margin-right: 10px;
+        }
+        .clear-button {
+          background-color: #d32f2f; /* Red for clear selection */
+          color: white;
+          padding: 15px 20px;
+          font-size: 18px;
+          border: none;
+          cursor: pointer;
         }
         .share-button {
           background-color: #2196F3;
@@ -322,8 +333,7 @@ export default function Game() {
           width: 100%;
           border-collapse: collapse;
         }
-        .leaderboard th,
-        .leaderboard td {
+        .leaderboard th, .leaderboard td {
           border: 1px solid #ddd;
           padding: 8px;
           text-align: center;
@@ -332,7 +342,6 @@ export default function Game() {
           background-color: #f2f2f2;
           font-weight: bold;
         }
-
         /* Mobile responsiveness */
         @media (max-width: 600px) {
           .grid-container {
@@ -342,7 +351,6 @@ export default function Game() {
             font-size: 1.5rem;
           }
         }
-
         /* Dark mode overrides */
         @media (prefers-color-scheme: dark) {
           .container {
@@ -350,16 +358,23 @@ export default function Game() {
             color: #fff;
           }
           .letter-button {
-            background-color: #1e1e1e; /* dark background for unsolved squares */
+            background-color: #1e1e1e;
             border: 1px solid #444;
-            color: #fff; /* text color in dark mode */
+            color: #fff;
+          }
+          .letter-button span {
+            color: #fff;
           }
           .submit-button {
-            background-color: #388e3c; /* darker green */
+            background-color: #388e3c;
+            color: #fff;
+          }
+          .clear-button {
+            background-color: #b71c1c;
             color: #fff;
           }
           .share-button {
-            background-color: #1976d2; /* darker blue */
+            background-color: #1976d2;
             color: #fff;
           }
           .popup {
@@ -374,8 +389,7 @@ export default function Game() {
           .leaderboard td {
             color: #fff;
           }
-          .leaderboard th,
-          .leaderboard td {
+          .leaderboard th, .leaderboard td {
             border-color: #555;
           }
         }
