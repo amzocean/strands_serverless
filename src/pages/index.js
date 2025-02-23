@@ -9,7 +9,6 @@ export default function Game() {
   const [message, setMessage] = useState("");
   const [showPopup, setShowPopup] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
-  const [lastTap, setLastTap] = useState(0);
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false); // Prevent extra attempts
@@ -52,23 +51,23 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Double-tap detection
+  // Modified letter click: Only add the letter if it hasn't been used yet
   const handleLetterClick = (letter, row, col) => {
-    if (puzzleComplete) return; // No more clicks if puzzle is solved
-    const currentTime = new Date().getTime();
-    if (currentTime - lastTap < 300) {
-      submitWord();
-    } else {
-      setSelectedLetters([...selectedLetters, { letter, row, col }]);
-      setLastTap(currentTime);
-    }
+    if (puzzleComplete) return;
+    // Check if the cell has already been selected in the current selection.
+    const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
+    // Check if the cell has already been used in a submitted successful word.
+    const alreadyUsed = game && foundWords.some(word => {
+      const path = game.word_paths[word];
+      return path && path.some(coord => coord[0] === row && coord[1] === col);
+    });
+    if (alreadySelected || alreadyUsed) return;
+    setSelectedLetters([...selectedLetters, { letter, row, col }]);
   };
 
   const submitWord = () => {
     if (puzzleComplete || !game) return;
-
     const word = selectedLetters.map(l => l.letter).join("");
-
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
 
@@ -82,17 +81,16 @@ export default function Game() {
       nextAttemptSequence.push("FAIL");
       setMessage(`Incorrect word: ${word}. Try again!`);
     }
-
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
     setSelectedLetters([]);
-
     if (nextFoundWords.length === game.valid_words.length) {
       setPuzzleComplete(true);
       setTimeout(() => setShowPopup(true), 500);
     }
   };
 
+  // Clear the current selection without submitting
   const clearSelection = () => {
     setSelectedLetters([]);
     setMessage("");
@@ -174,7 +172,6 @@ export default function Game() {
           <p style={{ fontWeight: "bold" }}>
             Progress: {foundWords.length} / {game.valid_words.length} solved
           </p>
-
           <div className="grid-container">
             {game.letter_grid.map((row, rowIndex) =>
               row.map((letter, colIndex) => {
@@ -192,7 +189,6 @@ export default function Game() {
               })
             )}
           </div>
-
           <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
           <div className="action-buttons">
             <button onClick={submitWord} className="submit-button">Submit Word</button>
@@ -202,13 +198,11 @@ export default function Game() {
       ) : (
         <p>Loading...</p>
       )}
-
       {message && (
         <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
           {message}
         </p>
       )}
-
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -223,7 +217,6 @@ export default function Game() {
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
-
       <div className="leaderboard">
         <h2>Leaderboard</h2>
         <table>
@@ -243,7 +236,6 @@ export default function Game() {
           </tbody>
         </table>
       </div>
-
       <style jsx>{`
         /* Light mode defaults */
         .container {
@@ -288,7 +280,7 @@ export default function Game() {
           margin-right: 10px;
         }
         .clear-button {
-          background-color: #d32f2f; /* Red for clear selection */
+          background-color: #d32f2f;
           color: white;
           padding: 15px 20px;
           font-size: 18px;
