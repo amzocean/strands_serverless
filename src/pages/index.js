@@ -70,7 +70,6 @@ export default function Game() {
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
@@ -172,7 +171,17 @@ export default function Game() {
           <p style={{ fontWeight: "bold" }}>
             Progress: {foundWords.length} / {game.valid_words.length} solved
           </p>
-          <div className="grid-container">
+          <div 
+            className="grid-container" 
+            style={{
+              gridTemplateColumns: game && game.letter_grid && game.letter_grid[0]
+                ? `repeat(${game.letter_grid[0].length}, 1fr)`
+                : "repeat(6, 1fr)",
+              gridTemplateRows: game && game.letter_grid
+                ? `repeat(${game.letter_grid.length}, 1fr)`
+                : "repeat(8, 1fr)"
+            }}
+          >
             {game.letter_grid.map((row, rowIndex) =>
               row.map((letter, colIndex) => {
                 const cellColor = getCellColor(rowIndex, colIndex);
@@ -198,13 +207,11 @@ export default function Game() {
       ) : (
         <p>Loading...</p>
       )}
-
       {message && (
         <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
           {message}
         </p>
       )}
-
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -220,8 +227,6 @@ export default function Game() {
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
-
-      {/* Leaderboard with no fixed height, so it grows with page scroll */}
       <div className="leaderboard">
         <h2>Leaderboard</h2>
         <table>
@@ -241,7 +246,6 @@ export default function Game() {
           </tbody>
         </table>
       </div>
-
       <style jsx>{`
         /* Light mode defaults */
         .container {
@@ -252,7 +256,6 @@ export default function Game() {
         }
         .grid-container {
           display: grid;
-          grid-template-columns: repeat(6, 1fr);
           gap: 5px;
           max-width: 400px;
           margin: 0 auto;
@@ -316,8 +319,7 @@ export default function Game() {
           border: 2px solid #333;
           color: #000;
         }
-        /* Light mode input color */
-        .name-input {
+        .popup input {
           padding: 10px;
           font-size: 16px;
           margin-top: 10px;
@@ -327,7 +329,6 @@ export default function Game() {
           border: 1px solid #ccc;
         }
         .leaderboard {
-          /* No fixed height, so it uses page scroll */
           margin-top: 30px;
           border-top: 1px solid #ccc;
           padding-top: 10px;
@@ -386,8 +387,7 @@ export default function Game() {
             border: 2px solid #555;
             color: #fff;
           }
-          /* Dark mode input color */
-          .name-input {
+          .popup input {
             background-color: #3a3a3a;
             color: #fff;
             border: 1px solid #666;
