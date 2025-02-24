@@ -116,12 +116,11 @@ export default function Game() {
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Strands Score: ${emojiScore}\nTry it at [Your URL]`;
+    const shareText = `Score: ${emojiScore}\n`;
     if (navigator.share) {
       navigator.share({
-        title: "Strands Game",
-        text: shareText,
-        url: "[Your URL]"
+        title: "Eid Milan Game",
+        text: shareText
       })
         .then(() => setMessage("Shared successfully!"))
         .catch(error => console.error("Error sharing:", error));
@@ -164,7 +163,7 @@ export default function Game() {
 
   return (
     <div className="container">
-      <h1>EID MILAN 1446H</h1>
+      <h1>EID MILAN GAME</h1>
       {game ? (
         <>
           <p>Game Theme: <b>{game.theme}</b></p>
