@@ -51,10 +51,12 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Letter click: Only add the letter if it hasn't been used already
+  // Modified letter click: Only add the letter if it hasn't been used yet
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
+    // Check if the cell has already been selected in the current selection.
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
+    // Check if the cell has already been used in a submitted successful word.
     const alreadyUsed = game && foundWords.some(word => {
       const path = game.word_paths[word];
       return path && path.some(coord => coord[0] === row && coord[1] === col);
@@ -68,10 +70,11 @@ export default function Game() {
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
+
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
-        nextAttemptSequence.push(word); // Append correct word (green dot)
+        nextAttemptSequence.push(word); // Append the correct word (green dot)
         setMessage(`Correct: ${word}`);
       }
     } else {
@@ -87,7 +90,7 @@ export default function Game() {
     }
   };
 
-  // Clear current selection without submitting
+  // Clear the current selection without submitting
   const clearSelection = () => {
     setSelectedLetters([]);
     setMessage("");
@@ -104,7 +107,7 @@ export default function Game() {
     return undefined;
   };
 
-  // Generate raw emoji string (only emojis) for final score
+  // Generate raw emoji string (only emojis) for the final score
   const generateEmojiScore = () => {
     return attemptSequence.map(attempt => {
       if (attempt === "FAIL") return failEmoji;
@@ -195,11 +198,13 @@ export default function Game() {
       ) : (
         <p>Loading...</p>
       )}
+
       {message && (
         <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
           {message}
         </p>
       )}
+
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -209,11 +214,14 @@ export default function Game() {
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             placeholder="Your name"
+            className="name-input"
           />
           <button onClick={submitScore} className="submit-button">Submit Score</button>
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
+
+      {/* Leaderboard with no fixed height, so it grows with page scroll */}
       <div className="leaderboard">
         <h2>Leaderboard</h2>
         <table>
@@ -233,6 +241,7 @@ export default function Game() {
           </tbody>
         </table>
       </div>
+
       <style jsx>{`
         /* Light mode defaults */
         .container {
@@ -307,15 +316,18 @@ export default function Game() {
           border: 2px solid #333;
           color: #000;
         }
-        .popup input {
+        /* Light mode input color */
+        .name-input {
           padding: 10px;
           font-size: 16px;
           margin-top: 10px;
           width: 80%;
+          background-color: #fff;
+          color: #000;
+          border: 1px solid #ccc;
         }
         .leaderboard {
-          max-height: 200px;
-          overflow-y: auto;
+          /* No fixed height, so it uses page scroll */
           margin-top: 30px;
           border-top: 1px solid #ccc;
           padding-top: 10px;
@@ -374,6 +386,12 @@ export default function Game() {
             border: 2px solid #555;
             color: #fff;
           }
+          /* Dark mode input color */
+          .name-input {
+            background-color: #3a3a3a;
+            color: #fff;
+            border: 1px solid #666;
+          }
           .leaderboard th {
             background-color: #333;
             color: #fff;
@@ -381,7 +399,8 @@ export default function Game() {
           .leaderboard td {
             color: #fff;
           }
-          .leaderboard th, .leaderboard td {
+          .leaderboard th,
+          .leaderboard td {
             border-color: #555;
           }
         }
