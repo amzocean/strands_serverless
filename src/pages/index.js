@@ -116,7 +116,7 @@ export default function Game() {
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Score: ${emojiScore}\n`;
+    const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
     if (navigator.share) {
       navigator.share({
         title: "Eid Milan Game",
