@@ -234,21 +234,24 @@ export default function Game() {
       {/* Tutorial Button */}
       <button className="tutorial-button" onClick={toggleTutorial}>?</button>
 
-      {/* Tutorial Modal */}
-      {showTutorial && (
-        <div className="tutorial-modal">
-          <div className="tutorial-content">
-            <h2>How to Play</h2>
-            <p><strong>Objective:</strong> Find all valid words hidden in the grid that follow the given theme.</p>
-            <p><strong>Selecting Letters:</strong> Tap a letter to begin a word. Each subsequent letter must be adjacent (horizontally, vertically, or diagonally) to the previous letter. If you select a non-adjacent letter, the previous selection will be cleared.</p>
-            <p><strong>Submitting Words:</strong> Press SUBMIT when you have formed a word. Correct words are marked with a green check (✅) and highlighted on the grid. Wrong words are marked with a red cross (❌).</p>
-            <p><strong>Hints:</strong> Wrong submissions that are valid English words (4+ letters) count toward earning a hint. Once you have made 2 valid wrong submissions, the HINT button becomes active. Pressing it will highlight one unsolved word.</p>
-            <p><strong>Clearing Selection:</strong> Use CLEAR to reset your current letter selection.</p>
-            <p><strong>Completion:</strong> When all words are found, you'll be prompted to submit your score to the leaderboard.</p>
-            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
-          </div>
+    {/* Tutorial Modal */}
+    {showTutorial && (
+      <div className="tutorial-modal">
+        <div className="tutorial-content">
+          <h2>How to Play 🎉</h2>
+          <ul>
+            <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
+            <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
+            <li>✅ Press <strong>SUBMIT</strong> to check your word.</li>
+            <li>💡 Get hints! Submit two valid english words (4+ letters), unlock the <strong>HINT</strong> button!.</li>
+            <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
+            <li>🏆 Solve them all and submit your score to the leaderboard!</li>
+          </ul>
+          <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
         </div>
-      )}
+      </div>
+    )}
+
 
       {/* Theme Pill */}
       <div className="theme-pill">Theme: {game.theme}</div>
