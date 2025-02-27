@@ -62,9 +62,9 @@ export default function Game() {
   // Modified letter click: Only add the letter if it hasn't been used yet
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
-    // Check if the cell has already been selected in the current selection.
+    // Check if the cell has already been selected in the current selection
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
-    // Check if the cell has already been used in a submitted successful word.
+    // Check if the cell has already been used in a submitted successful word
     const alreadyUsed =
       game &&
       foundWords.some(word => {
@@ -94,6 +94,7 @@ export default function Game() {
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
     setSelectedLetters([]);
+
     if (nextFoundWords.length === game.valid_words.length) {
       setPuzzleComplete(true);
       setTimeout(() => setShowPopup(true), 500);
@@ -177,59 +178,78 @@ export default function Game() {
 
   if (!game) return <p>Loading...</p>;
 
+  // Calculate progress percentage
+  const progressPercent =
+    game.valid_words.length > 0
+      ? (foundWords.length / game.valid_words.length) * 100
+      : 0;
+
   return (
     <div className="container">
-      <h1>EID MILAN GAME</h1>
-      {game ? (
-        <>
-          <p>
-            Game Theme: <b>{game.theme}</b>
-          </p>
-          <p style={{ fontWeight: "bold" }}>
-            Progress: {foundWords.length} / {game.valid_words.length} solved
-          </p>
-          <div
-            className="grid-container"
-            style={{
-              gridTemplateColumns:
-                game && game.letter_grid && game.letter_grid[0]
-                  ? `repeat(${game.letter_grid[0].length}, 1fr)`
-                  : "repeat(6, 1fr)",
-              gridTemplateRows:
-                game && game.letter_grid
-                  ? `repeat(${game.letter_grid.length}, 1fr)`
-                  : "repeat(8, 1fr)"
-            }}
-          >
-            {game.letter_grid.map((row, rowIndex) =>
-              row.map((letter, colIndex) => {
-                const cellColor = getCellColor(rowIndex, colIndex);
-                return (
-                  <button
-                    key={`${rowIndex}-${colIndex}`}
-                    onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                    className="letter-button"
-                    style={cellColor ? { backgroundColor: cellColor } : {}}
-                  >
-                    <span>{letter}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
-          <div className="action-buttons">
-            <button onClick={clearSelection} className="clear-button">
-              Clear Selection
-            </button>
-            <button onClick={submitWord} className="submit-button">
-              Submit Word
-            </button>
-          </div>
-        </>
-      ) : (
-        <p>Loading...</p>
-      )}
+      {/* Subtle stylized heading for Theme */}
+      <div className="theme-heading">
+        Theme: {game.theme}
+      </div>
+
+      {/* Selected Letters (styled pill) */}
+      <div className="selected-letters">
+        {selectedLetters.map(l => l.letter).join("")}
+      </div>
+
+      {/* Grid */}
+      <div
+        className="grid-container"
+        style={{
+          gridTemplateColumns:
+            game && game.letter_grid && game.letter_grid[0]
+              ? `repeat(${game.letter_grid[0].length}, 1fr)`
+              : "repeat(6, 1fr)",
+          gridTemplateRows:
+            game && game.letter_grid
+              ? `repeat(${game.letter_grid.length}, 1fr)`
+              : "repeat(8, 1fr)"
+        }}
+      >
+        {game.letter_grid.map((row, rowIndex) =>
+          row.map((letter, colIndex) => {
+            const cellColor = getCellColor(rowIndex, colIndex);
+            return (
+              <button
+                key={`${rowIndex}-${colIndex}`}
+                onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
+                className="letter-button"
+                style={cellColor ? { backgroundColor: cellColor } : {}}
+              >
+                <span>{letter}</span>
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {/* Progress Bar Below the Grid */}
+      <div className="progress-bar-container">
+        <div
+          className="progress-bar-fill"
+          style={{ width: `${progressPercent}%` }}
+        >
+          <span className="progress-text">
+            {foundWords.length} / {game.valid_words.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="action-buttons">
+        <button onClick={clearSelection} className="clear-button">
+          Clear Selection
+        </button>
+        <button onClick={submitWord} className="submit-button">
+          Submit Word
+        </button>
+      </div>
+
+      {/* Feedback Message */}
       {message && (
         <p
           style={{
@@ -240,6 +260,8 @@ export default function Game() {
           {message}
         </p>
       )}
+
+      {/* Popup on puzzle complete */}
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -259,8 +281,10 @@ export default function Game() {
           </button>
         </div>
       )}
+
+      {/* Leaderboard */}
       <div className="leaderboard">
-        <h2>Leaderboard</h2>
+        <h2 className="leaderboard-title">LEADERBOARD</h2>
         <table>
           <thead>
             <tr>
@@ -279,14 +303,9 @@ export default function Game() {
         </table>
       </div>
 
-      {/* 
-        Global style block:
-        1) Imports Montserrat from Google Fonts.
-        2) Applies it to html/body so all text inherits this font.
-      */}
+      {/* Global Font Import */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
-
         html,
         body {
           margin: 0;
@@ -296,14 +315,38 @@ export default function Game() {
       `}</style>
 
       <style jsx>{`
-        /* Light mode defaults */
+        /* Container & Global Styles */
         .container {
           text-align: center;
           padding: 10px;
-          background-color: #fafafa; /* Softer background */
+          background-color: #fafafa;
           color: #000;
-          font-family: inherit; /* Inherit Montserrat */
+          font-family: inherit;
         }
+
+        /* Theme Heading */
+        .theme-heading {
+          margin: 20px 0;
+          font-size: 1.4rem;
+          color: #333;
+          font-weight: 600;
+        }
+
+        /* Selected Letters (pill style) */
+        .selected-letters {
+          font-size: 1.6rem;
+          font-weight: 700;
+          color: #333;
+          background-color: #e9f5ff; /* subtle pastel blue */
+          display: inline-block;
+          padding: 8px 16px;
+          border-radius: 20px;
+          min-height: 30px;
+          margin-bottom: 10px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Grid */
         .grid-container {
           display: grid;
           gap: 5px;
@@ -314,7 +357,7 @@ export default function Game() {
           width: 100%;
           padding-top: 100%;
           position: relative;
-          border: 1px solid #ddd; /* Softer border */
+          border: 1px solid #ddd;
           cursor: pointer;
           color: #000;
           font-family: inherit;
@@ -327,6 +370,32 @@ export default function Game() {
           font-size: 1.8rem;
           font-weight: bold;
         }
+
+        /* Progress Bar */
+        .progress-bar-container {
+          margin: 20px auto;
+          width: 300px;
+          background-color: #ddd;
+          border-radius: 10px;
+          position: relative;
+          height: 25px;
+        }
+        .progress-bar-fill {
+          background-color: #68b684;
+          height: 100%;
+          border-radius: 10px 0 0 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-weight: bold;
+          transition: width 0.3s ease;
+        }
+        .progress-text {
+          z-index: 1;
+        }
+
+        /* Action Buttons */
         .action-buttons {
           display: flex;
           justify-content: space-between;
@@ -342,17 +411,16 @@ export default function Game() {
           cursor: pointer;
           font-family: inherit;
         }
-        /* Softer, modern button colors */
         .submit-button {
-          background-color: #68b684; /* Soft green */
+          background-color: #68b684;
           color: #fff;
         }
         .clear-button {
-          background-color: #eb5757; /* Softer red */
+          background-color: #eb5757;
           color: #fff;
         }
         .share-button {
-          background-color: #64b5f6; /* Softer blue */
+          background-color: #64b5f6;
           color: #fff;
           padding: 10px 15px;
           font-size: 16px;
@@ -361,6 +429,8 @@ export default function Game() {
           margin-top: 10px;
           margin-left: 10px;
         }
+
+        /* Popup */
         .popup {
           position: fixed;
           top: 50%;
@@ -383,11 +453,18 @@ export default function Game() {
           border: 1px solid #ccc;
           font-family: inherit;
         }
+
+        /* Leaderboard */
         .leaderboard {
           margin-top: 30px;
           border-top: 1px solid #ccc;
           padding-top: 10px;
           font-family: inherit;
+        }
+        .leaderboard-title {
+          text-transform: uppercase;
+          font-weight: bold;
+          margin: 0 0 10px;
         }
         .leaderboard table {
           width: 100%;
@@ -403,6 +480,7 @@ export default function Game() {
           background-color: #f2f2f2;
           font-weight: bold;
         }
+
         /* Mobile responsiveness */
         @media (max-width: 600px) {
           .grid-container {
@@ -411,7 +489,11 @@ export default function Game() {
           .letter-button span {
             font-size: 1.5rem;
           }
+          .progress-bar-container {
+            width: 80%;
+          }
         }
+
         /* Dark mode overrides */
         @media (prefers-color-scheme: dark) {
           .container {
@@ -425,6 +507,12 @@ export default function Game() {
           }
           .letter-button span {
             color: #fff;
+          }
+          .progress-bar-container {
+            background-color: #333;
+          }
+          .progress-bar-fill {
+            background-color: #388e3c;
           }
           .submit-button {
             background-color: #388e3c;
