@@ -6,7 +6,9 @@ export default function Game() {
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [foundWords, setFoundWords] = useState([]);
   const [attemptSequence, setAttemptSequence] = useState([]);
-  const [message, setMessage] = useState("");
+  const [submissionStatus, setSubmissionStatus] = useState(""); // holds word + ✅ or ❌
+  const [hintedWord, setHintedWord] = useState(""); // holds the currently hinted unsolved word
+  const [hintCounter, setHintCounter] = useState(0); // counts valid wrong submissions for hints
   const [showPopup, setShowPopup] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
@@ -21,15 +23,8 @@ export default function Game() {
   // Updated softer, modern colors
   const spangramColor = "#FFD966"; // Softer gold/pastel
   const otherColors = [
-    "#FFE5D9", // pastel peach
-    "#FFD7BA", // pastel orange
-    "#FEC89A", // pastel orange-brown
-    "#FAEDCD", // pastel yellow
-    "#D8F3DC", // pastel green
-    "#BDE0FE", // pastel light blue
-    "#A9DEF9", // pastel baby blue
-    "#FFC8DD", // pastel pink
-    "#C5E1E6"  // pastel grey-blue
+    "#FFE5D9", "#FFD7BA", "#FEC89A", "#FAEDCD",
+    "#D8F3DC", "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6"
   ];
 
   useEffect(() => {
@@ -59,9 +54,28 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Modified letter click: Only add the letter if it hasn't been used yet
+  // Actual dictionary check using the Free Dictionary API.
+  // Returns true if the word exists in the dictionary.
+  const isValidEnglish = async (word) => {
+    if (word.length < 4) return false;
+    try {
+      const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      // If response contains an array of entries, assume word is valid.
+      return Array.isArray(response.data);
+    } catch (error) {
+      // If error (e.g. word not found), return false.
+      return false;
+    }
+  };
+
+  // When a new letter is clicked, clear submissionStatus and previous selection (but not hintedWord)
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
+    if (submissionStatus) {
+      setSubmissionStatus("");
+      setSelectedLetters([]);
+      // Do not clear hintedWord so that the hint remains until solved.
+    }
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
     const alreadyUsed =
       game &&
@@ -70,11 +84,13 @@ export default function Game() {
         return path && path.some(coord => coord[0] === row && coord[1] === col);
       });
     if (alreadySelected || alreadyUsed) return;
-    setSelectedLetters([...selectedLetters, { letter, row, col }]);
+    setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  const submitWord = () => {
+  // Make submitWord asynchronous to await dictionary check.
+  const submitWord = async () => {
     if (puzzleComplete || !game) return;
+
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
@@ -82,16 +98,27 @@ export default function Game() {
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
-        nextAttemptSequence.push(word); // Append the correct word (green dot)
-        setMessage(`Correct: ${word}`);
+        nextAttemptSequence.push(word); // correct word
+        setSubmissionStatus(`${word} ✅`);
+        // If the hinted word was solved, clear the hint.
+        if (word === hintedWord) {
+          setHintedWord("");
+        }
       }
     } else {
       nextAttemptSequence.push("FAIL");
-      setMessage(`Incorrect word: ${word}. Try again!`);
+      setSubmissionStatus(`${word} ❌`);
+      // Use the actual dictionary check.
+      if (await isValidEnglish(word)) {
+        setHintCounter(prev => prev + 1);
+      }
+      // Do not clear hintedWord on wrong submission.
     }
+    // Clear selected letters to remove red highlight.
+    setSelectedLetters([]);
+
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
-    setSelectedLetters([]);
 
     if (nextFoundWords.length === game.valid_words.length) {
       setPuzzleComplete(true);
@@ -101,9 +128,11 @@ export default function Game() {
 
   const clearSelection = () => {
     setSelectedLetters([]);
-    setMessage("");
+    setSubmissionStatus("");
+    // Do not clear hintedWord so that hint remains until solved.
   };
 
+  // Return background color for solved words.
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -118,7 +147,7 @@ export default function Game() {
   const isCellSelected = (row, col) =>
     selectedLetters.some(l => l.row === row && l.col === col);
 
-  // Generate live score in emoji dot format from attemptSequence
+  // Generate live score in emoji dot format.
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
@@ -126,6 +155,26 @@ export default function Game() {
         return attempt === game?.spangram ? spangramEmoji : correctEmoji;
       })
       .join("");
+  };
+
+  // HINT BUTTON: When clicked, pick one unsolved word.
+  // Spangram is given as hint only if it is the last unsolved word.
+  const handleHint = () => {
+    if (!game) return;
+    const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
+    if (unsolved.length === 0) return;
+    if (unsolved.length > 1 && unsolved.includes(game.spangram)) {
+      const nonSpangram = unsolved.filter(word => word !== game.spangram);
+      if (nonSpangram.length > 0) {
+        setHintedWord(nonSpangram[0]);
+      } else {
+        setHintedWord(game.spangram);
+      }
+    } else {
+      setHintedWord(unsolved[0]);
+    }
+    // Reset the hint counter after using a hint.
+    setHintCounter(0);
   };
 
   const handleShareScore = () => {
@@ -136,30 +185,23 @@ export default function Game() {
         title: "Eid Milan Game",
         text: shareText
       })
-        .then(() => setMessage("Shared successfully!"))
         .catch(error => console.error("Error sharing:", error));
     } else {
       navigator.clipboard.writeText(shareText)
-        .then(() => setMessage("Score copied to clipboard!"))
-        .catch(err => setMessage("Failed to copy score."));
+        .catch(err => console.error("Failed to copy score."));
     }
   };
 
   const submitScore = () => {
-    if (!playerName.trim()) {
-      setMessage("Please enter your name.");
-      return;
-    }
+    if (!playerName.trim()) return;
     const emojiScore = generateEmojiScore();
     axios.post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
-        setMessage("Score submitted successfully!");
         setLeaderboard(response.data.leaderboard);
         resetGame();
       })
       .catch(error => {
         console.error("Error submitting score:", error);
-        setMessage("Error submitting score.");
       });
   };
 
@@ -169,6 +211,8 @@ export default function Game() {
     setFoundWords([]);
     setSelectedLetters([]);
     setAttemptSequence([]);
+    setSubmissionStatus("");
+    setHintedWord("");
     setPuzzleComplete(false);
     fetchGameData();
   };
@@ -180,17 +224,20 @@ export default function Game() {
       ? (foundWords.length / game.valid_words.length) * 100
       : 0;
 
+  // Determine hint button text.
+  const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
+
   return (
     <div className="container">
-      {/* Theme Pill at the top */}
-      <div className="theme-pill">
-        Theme: {game.theme}
-      </div>
+      {/* Theme Pill */}
+      <div className="theme-pill">Theme: {game.theme}</div>
 
-      {/* Outer container for selected letters with fixed height */}
+      {/* Selected Letters Area */}
       <div className="selected-letters-container">
         <div className="selected-letters">
-          {selectedLetters.map(l => l.letter).join("")}
+          {submissionStatus !== ""
+            ? submissionStatus
+            : selectedLetters.map(l => l.letter).join("")}
         </div>
       </div>
 
@@ -212,11 +259,17 @@ export default function Game() {
           row.map((letter, colIndex) => {
             const cellColor = getCellColor(rowIndex, colIndex);
             const currentlySelected = isCellSelected(rowIndex, colIndex);
+            // Check if this cell is part of the hinted word's path.
+            const isHinted = hintedWord &&
+              game.word_paths[hintedWord] &&
+              game.word_paths[hintedWord].some(
+                (coord) => coord[0] === rowIndex && coord[1] === colIndex
+              );
             return (
               <button
                 key={`${rowIndex}-${colIndex}`}
                 onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                className={`letter-button ${currentlySelected ? "selected-tile" : ""}`}
+                className={`letter-button ${currentlySelected ? "selected-tile" : ""} ${isHinted ? "hint-tile" : ""}`}
                 style={cellColor ? { backgroundColor: cellColor } : {}}
               >
                 <span>{letter}</span>
@@ -226,41 +279,28 @@ export default function Game() {
         )}
       </div>
 
-      {/* Progress Bar Below the Grid */}
+      {/* Progress Bar */}
       <div className="progress-bar-container">
-        <div
-          className="progress-bar-fill"
-          style={{ width: `${progressPercent}%` }}
-        >
+        <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}>
           <span className="progress-text">
             {foundWords.length} / {game.valid_words.length}
           </span>
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons (CLEAR, HINT, SUBMIT) */}
       <div className="action-buttons">
-        <button onClick={clearSelection} className="clear-button">
-          Clear Selection
+        <button onClick={clearSelection} className="clear-button">CLEAR</button>
+        <button onClick={handleHint} className="hint-button" disabled={hintCounter < 2}>
+          {hintButtonText}
         </button>
-        <button onClick={submitWord} className="submit-button">
-          Submit Word
-        </button>
+        <button onClick={submitWord} className="submit-button">SUBMIT</button>
       </div>
 
-      {/* Live Score Display in Emoji Format */}
-      <div className="live-score">
-        {generateEmojiScore()}
-      </div>
+      {/* Live Score Display */}
+      <div className="live-score">{generateEmojiScore()}</div>
 
-      {/* Feedback Message */}
-      {message && (
-        <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
-          {message}
-        </p>
-      )}
-
-      {/* Popup on puzzle complete */}
+      {/* Popup on Puzzle Complete */}
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -272,12 +312,8 @@ export default function Game() {
             placeholder="Your name"
             className="name-input"
           />
-          <button onClick={submitScore} className="submit-button">
-            Submit Score
-          </button>
-          <button onClick={handleShareScore} className="share-button">
-            📤 Share Score
-          </button>
+          <button onClick={submitScore} className="submit-button">Submit Score</button>
+          <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
 
@@ -305,7 +341,8 @@ export default function Game() {
       {/* Global Font Import */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
-        html, body {
+        html,
+        body {
           margin: 0;
           padding: 0;
           font-family: "Montserrat", sans-serif;
@@ -343,7 +380,7 @@ export default function Game() {
           height: 20px;
           margin-bottom: 10px;
         }
-        /* Selected Letters (plain text, red when selected) */
+        /* Selected Letters: red text or submissionStatus if set */
         .selected-letters {
           font-size: 1.2rem;
           font-weight: 600;
@@ -374,12 +411,22 @@ export default function Game() {
           transform: translate(-50%, -50%);
           font-size: 1.8rem;
           font-weight: bold;
-          /* Default text color for non-selected cells */
           color: #000;
         }
-        /* When cell is selected, change the letter color to red */
         .letter-button.selected-tile span {
           color: red;
+        }
+        /* Hint tile style: animate letter text by flashing opacity.
+           In light mode, text color remains blue (#2196F3);
+           in dark mode, overridden to blue (#1976D2). */
+        .hint-tile span {
+          color: #2196F3;
+          animation: hintFlashText 1.5s infinite;
+        }
+        @keyframes hintFlashText {
+          0% { opacity: 1; }
+          50% { opacity: 0.7; }
+          100% { opacity: 1; }
         }
 
         /* Live Score Display */
@@ -436,6 +483,14 @@ export default function Game() {
         }
         .clear-button {
           background-color: #eb5757;
+          color: #fff;
+        }
+        .hint-button {
+          background-color: #2196F3;
+          color: #fff;
+        }
+        .hint-button:disabled {
+          background-color: #90CAF9;
           color: #fff;
         }
         .share-button {
@@ -550,8 +605,16 @@ export default function Game() {
             background-color: #b71c1c;
             color: #fff;
           }
+          .hint-button {
+            background-color: #1976D2;
+            color: #fff;
+          }
+          .hint-button:disabled {
+            background-color: #90CAF9;
+            color: #fff;
+          }
           .share-button {
-            background-color: #1976d2;
+            background-color: #1976D2;
             color: #fff;
           }
           .popup {
@@ -574,6 +637,10 @@ export default function Game() {
           .leaderboard th,
           .leaderboard td {
             border-color: #555;
+          }
+          /* In dark mode, force hinted text color to blue */
+          .letter-button.hint-tile span {
+            color: #1976D2 !important;
           }
         }
       `}</style>
