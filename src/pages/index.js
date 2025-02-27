@@ -132,16 +132,14 @@ export default function Game() {
     const emojiScore = generateEmojiScore();
     const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
     if (navigator.share) {
-      navigator
-        .share({
-          title: "Eid Milan Game",
-          text: shareText
-        })
+      navigator.share({
+        title: "Eid Milan Game",
+        text: shareText
+      })
         .then(() => setMessage("Shared successfully!"))
         .catch(error => console.error("Error sharing:", error));
     } else {
-      navigator.clipboard
-        .writeText(shareText)
+      navigator.clipboard.writeText(shareText)
         .then(() => setMessage("Score copied to clipboard!"))
         .catch(err => setMessage("Failed to copy score."));
     }
@@ -153,8 +151,7 @@ export default function Game() {
       return;
     }
     const emojiScore = generateEmojiScore();
-    axios
-      .post("/api/submit-score", { name: playerName, score: emojiScore })
+    axios.post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
         setMessage("Score submitted successfully!");
         setLeaderboard(response.data.leaderboard);
@@ -186,14 +183,16 @@ export default function Game() {
 
   return (
     <div className="container">
-      {/* Subtle stylized heading for Theme */}
-      <div className="theme-heading">
+      {/* Theme Pill at the top */}
+      <div className="theme-pill">
         Theme: {game.theme}
       </div>
 
-      {/* Selected Letters (styled pill) */}
-      <div className="selected-letters">
-        {selectedLetters.map(l => l.letter).join("")}
+      {/* Outer container for selected letters with fixed height */}
+      <div className="selected-letters-container">
+        <div className="selected-letters">
+          {selectedLetters.map(l => l.letter).join("")}
+        </div>
       </div>
 
       {/* Grid */}
@@ -269,7 +268,7 @@ export default function Game() {
           <input
             type="text"
             value={playerName}
-            onChange={e => setPlayerName(e.target.value)}
+            onChange={(e) => setPlayerName(e.target.value)}
             placeholder="Your name"
             className="name-input"
           />
@@ -306,8 +305,7 @@ export default function Game() {
       {/* Global Font Import */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
-        html,
-        body {
+        html, body {
           margin: 0;
           padding: 0;
           font-family: "Montserrat", sans-serif;
@@ -324,26 +322,33 @@ export default function Game() {
           font-family: inherit;
         }
 
-        /* Theme Heading */
-        .theme-heading {
-          margin: 20px 0;
-          font-size: 1.4rem;
-          color: #333;
+        /* Theme Pill */
+        .theme-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 40px;
+          font-size: 1.2rem;
           font-weight: 600;
-        }
-
-        /* Selected Letters (pill style) */
-        .selected-letters {
-          font-size: 1.6rem;
-          font-weight: 700;
           color: #333;
-          background-color: #e9f5ff; /* subtle pastel blue */
-          display: inline-block;
-          padding: 8px 16px;
+          background-color: #e9f5ff;
+          padding: 0 16px;
           border-radius: 20px;
-          min-height: 30px;
           margin-bottom: 10px;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Outer container for selected letters (fixed height) */
+        .selected-letters-container {
+          height: 20px;  /* Fixed height to reserve space */
+          margin-bottom: 10px;
+        }
+        /* Selected Letters (plain text) */
+        .selected-letters {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #333;
+          /* No extra padding or border */
         }
 
         /* Grid */
@@ -357,10 +362,11 @@ export default function Game() {
           width: 100%;
           padding-top: 100%;
           position: relative;
-          border: 1px solid #ddd;
           cursor: pointer;
           color: #000;
           font-family: inherit;
+          border: none;
+          background-color: #fff;
         }
         .letter-button span {
           position: absolute;
@@ -500,9 +506,15 @@ export default function Game() {
             background-color: #121212;
             color: #fff;
           }
+          .theme-pill {
+            background-color: #333;
+            color: #fff;
+          }
+          .selected-letters {
+            color: #fff;
+          }
           .letter-button {
             background-color: #1e1e1e;
-            border: 1px solid #444;
             color: #fff;
           }
           .letter-button span {
