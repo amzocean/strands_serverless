@@ -68,7 +68,8 @@ export default function Game() {
     }
   };
 
-  // When a new letter is clicked, clear submissionStatus and previous selection (but not hintedWord)
+  // When a new letter is clicked, enforce that it must be adjacent to the last selected letter.
+  // If not adjacent, clear the previous selection and start fresh.
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -84,6 +85,17 @@ export default function Game() {
         return path && path.some(coord => coord[0] === row && coord[1] === col);
       });
     if (alreadySelected || alreadyUsed) return;
+
+    if (selectedLetters.length > 0) {
+      const last = selectedLetters[selectedLetters.length - 1];
+      const rowDiff = Math.abs(row - last.row);
+      const colDiff = Math.abs(col - last.col);
+      if (rowDiff > 1 || colDiff > 1) {
+        // New letter is not adjacent, so clear previous selection.
+        setSelectedLetters([{ letter, row, col }]);
+        return;
+      }
+    }
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
@@ -132,7 +144,7 @@ export default function Game() {
     // Do not clear hintedWord so that hint remains until solved.
   };
 
-  // Return background color for solved words.
+  // Return background color for cells belonging to solved words.
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -179,7 +191,7 @@ export default function Game() {
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
+    const shareText = `Eid Milan Game # 1\nScore: ${emojiScore}`;
     if (navigator.share) {
       navigator.share({
         title: "Eid Milan Game",
@@ -416,9 +428,7 @@ export default function Game() {
         .letter-button.selected-tile span {
           color: red;
         }
-        /* Hint tile style: animate letter text by flashing opacity.
-           In light mode, text color remains blue (#2196F3);
-           in dark mode, overridden to blue (#1976D2). */
+        /* Hint tile style: animate letter text by flashing opacity; base color remains blue */
         .hint-tile span {
           color: #2196F3;
           animation: hintFlashText 1.5s infinite;
