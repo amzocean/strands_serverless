@@ -3,17 +3,17 @@ import sys, random, concurrent.futures
 
 # ------------------ Configuration ------------------
 GRID_WIDTH = 6
-GRID_HEIGHT = 8
-TOTAL_CELLS = GRID_WIDTH * GRID_HEIGHT  # 48
+GRID_HEIGHT = 7
+TOTAL_CELLS = GRID_WIDTH * GRID_HEIGHT  # 42
 
 # Provided words & spangram.
 # Their total letters must equal 48:
 #   LION (4) + TIGER (5) + BEAR (4) + ZEBRA (5) + EAGLE (5) +
 #   SHARK (5) + WHALE (5) + FROG (4) + TOAD (4)
 #   plus spangram ANIMALS (7) = 48 letters.
-wordsList = ["ALMOND", "CORN", "CHICKPEA", "TAPIOCA", "BUCKWHEAT",
-             "RICE"]
-spangram = "GLUTENFREE"  # 7 letters
+wordsList = ["FOOD", "GAMES", "RAFFLES", "PHOTO", "GIFTS",
+             "ROSEHILL"]
+spangram = "EIDMILAN"  # 7 letters
 
 # Verify total letters
 if sum(len(w) for w in wordsList) + len(spangram) != TOTAL_CELLS:
