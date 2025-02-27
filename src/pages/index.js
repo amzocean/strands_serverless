@@ -242,8 +242,9 @@ export default function Game() {
           <ul>
             <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
             <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
+            <li>🔒 <strong>Each letter can be used only once!</strong></li>
             <li>✅ Press <strong>SUBMIT</strong> to check your word.</li>
-            <li>💡 Get hints! Submit two valid english words (4+ letters), unlock the <strong>HINT</strong> button!.</li>
+            <li>💡 Get hints! Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
             <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
             <li>🏆 Solve them all and submit your score to the leaderboard!</li>
           </ul>
@@ -251,6 +252,7 @@ export default function Game() {
         </div>
       </div>
     )}
+
 
 
       {/* Theme Pill */}
