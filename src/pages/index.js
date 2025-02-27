@@ -10,18 +10,19 @@ export default function Game() {
   const [hintedWord, setHintedWord] = useState(""); // holds the currently hinted unsolved word
   const [hintCounter, setHintCounter] = useState(0); // counts valid wrong submissions for hints
   const [showPopup, setShowPopup] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false); // new state for tutorial modal
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false); // Prevent extra attempts
 
   // Emoji system for scoring
-  const spangramEmoji = "🟡"; // Yellow for spangram
-  const correctEmoji = "🟢";  // Green for non-spangram words
-  const failEmoji = "⚫";     // Black for failed attempts
+  const spangramEmoji = "🟡";
+  const correctEmoji = "🟢";
+  const failEmoji = "⚫";
 
   // Updated softer, modern colors
-  const spangramColor = "#FFD966"; // Softer gold/pastel
+  const spangramColor = "#FFD966";
   const otherColors = [
     "#FFE5D9", "#FFD7BA", "#FEC89A", "#FAEDCD",
     "#D8F3DC", "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6"
@@ -55,21 +56,17 @@ export default function Game() {
   };
 
   // Actual dictionary check using the Free Dictionary API.
-  // Returns true if the word exists in the dictionary.
   const isValidEnglish = async (word) => {
     if (word.length < 4) return false;
     try {
       const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-      // If response contains an array of entries, assume word is valid.
       return Array.isArray(response.data);
     } catch (error) {
-      // If error (e.g. word not found), return false.
       return false;
     }
   };
 
-  // When a new letter is clicked, enforce that it must be adjacent to the last selected letter.
-  // If not adjacent, clear the previous selection and start fresh.
+  // When a new letter is clicked, enforce that it is adjacent to the last selected letter.
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -91,7 +88,7 @@ export default function Game() {
       const rowDiff = Math.abs(row - last.row);
       const colDiff = Math.abs(col - last.col);
       if (rowDiff > 1 || colDiff > 1) {
-        // New letter is not adjacent, so clear previous selection.
+        // Not adjacent: clear previous selection.
         setSelectedLetters([{ letter, row, col }]);
         return;
       }
@@ -102,7 +99,6 @@ export default function Game() {
   // Make submitWord asynchronous to await dictionary check.
   const submitWord = async () => {
     if (puzzleComplete || !game) return;
-
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
@@ -110,9 +106,8 @@ export default function Game() {
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
-        nextAttemptSequence.push(word); // correct word
+        nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-        // If the hinted word was solved, clear the hint.
         if (word === hintedWord) {
           setHintedWord("");
         }
@@ -120,15 +115,11 @@ export default function Game() {
     } else {
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      // Use the actual dictionary check.
       if (await isValidEnglish(word)) {
         setHintCounter(prev => prev + 1);
       }
-      // Do not clear hintedWord on wrong submission.
     }
-    // Clear selected letters to remove red highlight.
     setSelectedLetters([]);
-
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
 
@@ -144,7 +135,6 @@ export default function Game() {
     // Do not clear hintedWord so that hint remains until solved.
   };
 
-  // Return background color for cells belonging to solved words.
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -159,7 +149,6 @@ export default function Game() {
   const isCellSelected = (row, col) =>
     selectedLetters.some(l => l.row === row && l.col === col);
 
-  // Generate live score in emoji dot format.
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
@@ -169,8 +158,7 @@ export default function Game() {
       .join("");
   };
 
-  // HINT BUTTON: When clicked, pick one unsolved word.
-  // Spangram is given as hint only if it is the last unsolved word.
+  // HINT: Pick one unsolved word, giving spangram as a hint only if it's the last unsolved word.
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
@@ -185,16 +173,14 @@ export default function Game() {
     } else {
       setHintedWord(unsolved[0]);
     }
-    // Reset the hint counter after using a hint.
     setHintCounter(0);
   };
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Eid Milan Game # 1\nScore: ${emojiScore}`;
+    const shareText = `Eid Milan Game #1\nScore: ${emojiScore}\nwww.eidmilan.com`;
     if (navigator.share) {
       navigator.share({
-        title: "Eid Milan Game",
         text: shareText
       })
         .catch(error => console.error("Error sharing:", error));
@@ -229,6 +215,11 @@ export default function Game() {
     fetchGameData();
   };
 
+  // Tutorial modal toggle.
+  const toggleTutorial = () => {
+    setShowTutorial(prev => !prev);
+  };
+
   if (!game) return <p>Loading...</p>;
 
   const progressPercent =
@@ -236,11 +227,29 @@ export default function Game() {
       ? (foundWords.length / game.valid_words.length) * 100
       : 0;
 
-  // Determine hint button text.
   const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
 
   return (
     <div className="container">
+      {/* Tutorial Button */}
+      <button className="tutorial-button" onClick={toggleTutorial}>?</button>
+
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <div className="tutorial-modal">
+          <div className="tutorial-content">
+            <h2>How to Play</h2>
+            <p><strong>Objective:</strong> Find all valid words hidden in the grid that follow the given theme.</p>
+            <p><strong>Selecting Letters:</strong> Tap a letter to begin a word. Each subsequent letter must be adjacent (horizontally, vertically, or diagonally) to the previous letter. If you select a non-adjacent letter, the previous selection will be cleared.</p>
+            <p><strong>Submitting Words:</strong> Press SUBMIT when you have formed a word. Correct words are marked with a green check (✅) and highlighted on the grid. Wrong words are marked with a red cross (❌).</p>
+            <p><strong>Hints:</strong> Wrong submissions that are valid English words (4+ letters) count toward earning a hint. Once you have made 2 valid wrong submissions, the HINT button becomes active. Pressing it will highlight one unsolved word.</p>
+            <p><strong>Clearing Selection:</strong> Use CLEAR to reset your current letter selection.</p>
+            <p><strong>Completion:</strong> When all words are found, you'll be prompted to submit your score to the leaderboard.</p>
+            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
+          </div>
+        </div>
+      )}
+
       {/* Theme Pill */}
       <div className="theme-pill">Theme: {game.theme}</div>
 
@@ -271,7 +280,6 @@ export default function Game() {
           row.map((letter, colIndex) => {
             const cellColor = getCellColor(rowIndex, colIndex);
             const currentlySelected = isCellSelected(rowIndex, colIndex);
-            // Check if this cell is part of the hinted word's path.
             const isHinted = hintedWord &&
               game.word_paths[hintedWord] &&
               game.word_paths[hintedWord].some(
@@ -364,11 +372,62 @@ export default function Game() {
       <style jsx>{`
         /* Container & Global Styles */
         .container {
+          position: relative;
           text-align: center;
           padding: 10px;
           background-color: #fafafa;
           color: #000;
           font-family: inherit;
+        }
+
+        /* Tutorial Button */
+        .tutorial-button {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background-color: #64b5f6;
+          border: none;
+          border-radius: 50%;
+          width: 35px;
+          height: 35px;
+          font-size: 1.2rem;
+          color: #fff;
+          cursor: pointer;
+        }
+
+        /* Tutorial Modal */
+        .tutorial-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .tutorial-content {
+          background: #fff;
+          color: #000;
+          padding: 20px;
+          border-radius: 10px;
+          max-width: 500px;
+          width: 90%;
+          text-align: left;
+        }
+        .tutorial-content h2 {
+          margin-top: 0;
+        }
+        .close-tutorial {
+          margin-top: 15px;
+          padding: 10px 20px;
+          background-color: #68b684;
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
         }
 
         /* Theme Pill */
@@ -648,7 +707,6 @@ export default function Game() {
           .leaderboard td {
             border-color: #555;
           }
-          /* In dark mode, force hinted text color to blue */
           .letter-button.hint-tile span {
             color: #1976D2 !important;
           }
