@@ -118,6 +118,10 @@ export default function Game() {
     return undefined;
   };
 
+  // Check if a cell is currently selected
+  const isCellSelected = (row, col) =>
+    selectedLetters.some(l => l.row === row && l.col === col);
+
   // Generate raw emoji string (only emojis) for the final score
   const generateEmojiScore = () => {
     return attemptSequence
@@ -212,11 +216,13 @@ export default function Game() {
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const cellColor = getCellColor(rowIndex, colIndex);
+            const currentlySelected = isCellSelected(rowIndex, colIndex);
+
             return (
               <button
                 key={`${rowIndex}-${colIndex}`}
                 onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                className="letter-button"
+                className={`letter-button ${currentlySelected ? "selected-tile" : ""}`}
                 style={cellColor ? { backgroundColor: cellColor } : {}}
               >
                 <span>{letter}</span>
@@ -340,7 +346,7 @@ export default function Game() {
 
         /* Outer container for selected letters (fixed height) */
         .selected-letters-container {
-          height: 20px;  /* Fixed height to reserve space */
+          height: 20px;
           margin-bottom: 10px;
         }
         /* Selected Letters (plain text) */
@@ -348,7 +354,6 @@ export default function Game() {
           font-size: 1.2rem;
           font-weight: 600;
           color: #333;
-          /* No extra padding or border */
         }
 
         /* Grid */
@@ -375,6 +380,16 @@ export default function Game() {
           transform: translate(-50%, -50%);
           font-size: 1.8rem;
           font-weight: bold;
+        }
+
+        /* Highlight for selected tiles using animation and box-shadow */
+        .letter-button.selected-tile {
+          box-shadow: 0 0 8px #ff9800;
+          animation: flash 1s infinite alternate;
+        }
+        @keyframes flash {
+          from { box-shadow: 0 0 8px #ff9800; }
+          to { box-shadow: 0 0 16px #ff9800; }
         }
 
         /* Progress Bar */
