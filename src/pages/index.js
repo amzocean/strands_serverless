@@ -62,9 +62,7 @@ export default function Game() {
   // Modified letter click: Only add the letter if it hasn't been used yet
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
-    // Check if the cell has already been selected in the current selection
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
-    // Check if the cell has already been used in a submitted successful word
     const alreadyUsed =
       game &&
       foundWords.some(word => {
@@ -101,7 +99,6 @@ export default function Game() {
     }
   };
 
-  // Clear the current selection without submitting
   const clearSelection = () => {
     setSelectedLetters([]);
     setMessage("");
@@ -118,11 +115,10 @@ export default function Game() {
     return undefined;
   };
 
-  // Check if a cell is currently selected
   const isCellSelected = (row, col) =>
     selectedLetters.some(l => l.row === row && l.col === col);
 
-  // Generate raw emoji string (only emojis) for the final score
+  // Generate live score in emoji dot format from attemptSequence
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
@@ -179,7 +175,6 @@ export default function Game() {
 
   if (!game) return <p>Loading...</p>;
 
-  // Calculate progress percentage
   const progressPercent =
     game.valid_words.length > 0
       ? (foundWords.length / game.valid_words.length) * 100
@@ -217,7 +212,6 @@ export default function Game() {
           row.map((letter, colIndex) => {
             const cellColor = getCellColor(rowIndex, colIndex);
             const currentlySelected = isCellSelected(rowIndex, colIndex);
-
             return (
               <button
                 key={`${rowIndex}-${colIndex}`}
@@ -254,14 +248,14 @@ export default function Game() {
         </button>
       </div>
 
+      {/* Live Score Display in Emoji Format */}
+      <div className="live-score">
+        {generateEmojiScore()}
+      </div>
+
       {/* Feedback Message */}
       {message && (
-        <p
-          style={{
-            fontWeight: "bold",
-            color: message.startsWith("Correct") ? "green" : "red"
-          }}
-        >
+        <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
           {message}
         </p>
       )}
@@ -349,11 +343,11 @@ export default function Game() {
           height: 20px;
           margin-bottom: 10px;
         }
-        /* Selected Letters (plain text) */
+        /* Selected Letters (plain text, red when selected) */
         .selected-letters {
           font-size: 1.2rem;
           font-weight: 600;
-          color: #333;
+          color: red;
         }
 
         /* Grid */
@@ -380,16 +374,20 @@ export default function Game() {
           transform: translate(-50%, -50%);
           font-size: 1.8rem;
           font-weight: bold;
+          /* Default text color for non-selected cells */
+          color: #000;
+        }
+        /* When cell is selected, change the letter color to red */
+        .letter-button.selected-tile span {
+          color: red;
         }
 
-        /* Highlight for selected tiles using animation and box-shadow */
-        .letter-button.selected-tile {
-          box-shadow: 0 0 8px #ff9800;
-          animation: flash 1s infinite alternate;
-        }
-        @keyframes flash {
-          from { box-shadow: 0 0 8px #ff9800; }
-          to { box-shadow: 0 0 16px #ff9800; }
+        /* Live Score Display */
+        .live-score {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 10px 0;
+          color: #333;
         }
 
         /* Progress Bar */
@@ -526,7 +524,7 @@ export default function Game() {
             color: #fff;
           }
           .selected-letters {
-            color: #fff;
+            color: red;
           }
           .letter-button {
             background-color: #1e1e1e;
@@ -534,6 +532,9 @@ export default function Game() {
           }
           .letter-button span {
             color: #fff;
+          }
+          .letter-button.selected-tile span {
+            color: red;
           }
           .progress-bar-container {
             background-color: #333;
