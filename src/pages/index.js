@@ -18,11 +18,18 @@ export default function Game() {
   const correctEmoji = "🟢";  // Green for non-spangram words
   const failEmoji = "⚫";     // Black for failed attempts
 
-  // Colors for puzzle highlighting (light mode)
-  const spangramColor = "#FFD700"; // Gold
+  // Updated softer, modern colors
+  const spangramColor = "#FFD966"; // Softer gold/pastel
   const otherColors = [
-    "#a1887f", "#90a4ae", "#81c784", "#ce93d8",
-    "#ffab91", "#b0bec5", "#aed581", "#ba68c8", "#4db6ac"
+    "#FFE5D9", // pastel peach
+    "#FFD7BA", // pastel orange
+    "#FEC89A", // pastel orange-brown
+    "#FAEDCD", // pastel yellow
+    "#D8F3DC", // pastel green
+    "#BDE0FE", // pastel light blue
+    "#A9DEF9", // pastel baby blue
+    "#FFC8DD", // pastel pink
+    "#C5E1E6"  // pastel grey-blue
   ];
 
   useEffect(() => {
@@ -36,9 +43,10 @@ export default function Game() {
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
-          mapping[word] = word === response.data.spangram
-            ? spangramColor
-            : otherColors[(index - 1) % otherColors.length];
+          mapping[word] =
+            word === response.data.spangram
+              ? spangramColor
+              : otherColors[(index - 1) % otherColors.length];
         });
         setColorMapping(mapping);
       })
@@ -57,10 +65,12 @@ export default function Game() {
     // Check if the cell has already been selected in the current selection.
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
     // Check if the cell has already been used in a submitted successful word.
-    const alreadyUsed = game && foundWords.some(word => {
-      const path = game.word_paths[word];
-      return path && path.some(coord => coord[0] === row && coord[1] === col);
-    });
+    const alreadyUsed =
+      game &&
+      foundWords.some(word => {
+        const path = game.word_paths[word];
+        return path && path.some(coord => coord[0] === row && coord[1] === col);
+      });
     if (alreadySelected || alreadyUsed) return;
     setSelectedLetters([...selectedLetters, { letter, row, col }]);
   };
@@ -70,6 +80,7 @@ export default function Game() {
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
+
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
@@ -108,24 +119,28 @@ export default function Game() {
 
   // Generate raw emoji string (only emojis) for the final score
   const generateEmojiScore = () => {
-    return attemptSequence.map(attempt => {
-      if (attempt === "FAIL") return failEmoji;
-      return attempt === game?.spangram ? spangramEmoji : correctEmoji;
-    }).join("");
+    return attemptSequence
+      .map(attempt => {
+        if (attempt === "FAIL") return failEmoji;
+        return attempt === game?.spangram ? spangramEmoji : correctEmoji;
+      })
+      .join("");
   };
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
     const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
     if (navigator.share) {
-      navigator.share({
-        title: "Eid Milan Game",
-        text: shareText
-      })
+      navigator
+        .share({
+          title: "Eid Milan Game",
+          text: shareText
+        })
         .then(() => setMessage("Shared successfully!"))
         .catch(error => console.error("Error sharing:", error));
     } else {
-      navigator.clipboard.writeText(shareText)
+      navigator.clipboard
+        .writeText(shareText)
         .then(() => setMessage("Score copied to clipboard!"))
         .catch(err => setMessage("Failed to copy score."));
     }
@@ -137,7 +152,8 @@ export default function Game() {
       return;
     }
     const emojiScore = generateEmojiScore();
-    axios.post("/api/submit-score", { name: playerName, score: emojiScore })
+    axios
+      .post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
         setMessage("Score submitted successfully!");
         setLeaderboard(response.data.leaderboard);
@@ -166,19 +182,23 @@ export default function Game() {
       <h1>EID MILAN GAME</h1>
       {game ? (
         <>
-          <p>Game Theme: <b>{game.theme}</b></p>
+          <p>
+            Game Theme: <b>{game.theme}</b>
+          </p>
           <p style={{ fontWeight: "bold" }}>
             Progress: {foundWords.length} / {game.valid_words.length} solved
           </p>
-          <div 
-            className="grid-container" 
+          <div
+            className="grid-container"
             style={{
-              gridTemplateColumns: game && game.letter_grid && game.letter_grid[0]
-                ? `repeat(${game.letter_grid[0].length}, 1fr)`
-                : "repeat(6, 1fr)",
-              gridTemplateRows: game && game.letter_grid
-                ? `repeat(${game.letter_grid.length}, 1fr)`
-                : "repeat(8, 1fr)"
+              gridTemplateColumns:
+                game && game.letter_grid && game.letter_grid[0]
+                  ? `repeat(${game.letter_grid[0].length}, 1fr)`
+                  : "repeat(6, 1fr)",
+              gridTemplateRows:
+                game && game.letter_grid
+                  ? `repeat(${game.letter_grid.length}, 1fr)`
+                  : "repeat(8, 1fr)"
             }}
           >
             {game.letter_grid.map((row, rowIndex) =>
@@ -199,15 +219,24 @@ export default function Game() {
           </div>
           <p>Selected: {selectedLetters.map(l => l.letter).join("")}</p>
           <div className="action-buttons">
-            <button onClick={clearSelection} className="clear-button">Clear Selection</button>
-            <button onClick={submitWord} className="submit-button">Submit Word</button>
+            <button onClick={clearSelection} className="clear-button">
+              Clear Selection
+            </button>
+            <button onClick={submitWord} className="submit-button">
+              Submit Word
+            </button>
           </div>
         </>
       ) : (
         <p>Loading...</p>
       )}
       {message && (
-        <p style={{ fontWeight: "bold", color: message.startsWith("Correct") ? "green" : "red" }}>
+        <p
+          style={{
+            fontWeight: "bold",
+            color: message.startsWith("Correct") ? "green" : "red"
+          }}
+        >
           {message}
         </p>
       )}
@@ -218,12 +247,16 @@ export default function Game() {
           <input
             type="text"
             value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
+            onChange={e => setPlayerName(e.target.value)}
             placeholder="Your name"
             className="name-input"
           />
-          <button onClick={submitScore} className="submit-button">Submit Score</button>
-          <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
+          <button onClick={submitScore} className="submit-button">
+            Submit Score
+          </button>
+          <button onClick={handleShareScore} className="share-button">
+            📤 Share Score
+          </button>
         </div>
       )}
       <div className="leaderboard">
@@ -245,13 +278,31 @@ export default function Game() {
           </tbody>
         </table>
       </div>
+
+      {/* 
+        Global style block:
+        1) Imports Montserrat from Google Fonts.
+        2) Applies it to html/body so all text inherits this font.
+      */}
+      <style jsx global>{`
+        @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
+
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          font-family: "Montserrat", sans-serif;
+        }
+      `}</style>
+
       <style jsx>{`
         /* Light mode defaults */
         .container {
           text-align: center;
           padding: 10px;
-          background-color: #fff;
+          background-color: #fafafa; /* Softer background */
           color: #000;
+          font-family: inherit; /* Inherit Montserrat */
         }
         .grid-container {
           display: grid;
@@ -263,9 +314,10 @@ export default function Game() {
           width: 100%;
           padding-top: 100%;
           position: relative;
-          border: 1px solid #ccc;
+          border: 1px solid #ddd; /* Softer border */
           cursor: pointer;
           color: #000;
+          font-family: inherit;
         }
         .letter-button span {
           position: absolute;
@@ -288,18 +340,20 @@ export default function Game() {
           font-size: 18px;
           border: none;
           cursor: pointer;
+          font-family: inherit;
         }
+        /* Softer, modern button colors */
         .submit-button {
-          background-color: #4CAF50;
-          color: white;
+          background-color: #68b684; /* Soft green */
+          color: #fff;
         }
         .clear-button {
-          background-color: #d32f2f;
-          color: white;
+          background-color: #eb5757; /* Softer red */
+          color: #fff;
         }
         .share-button {
-          background-color: #2196F3;
-          color: white;
+          background-color: #64b5f6; /* Softer blue */
+          color: #fff;
           padding: 10px 15px;
           font-size: 16px;
           border: none;
@@ -312,11 +366,12 @@ export default function Game() {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          background: white;
+          background: #fff;
           padding: 20px;
           text-align: center;
           border: 2px solid #333;
           color: #000;
+          font-family: inherit;
         }
         .popup input {
           padding: 10px;
@@ -326,11 +381,13 @@ export default function Game() {
           background-color: #fff;
           color: #000;
           border: 1px solid #ccc;
+          font-family: inherit;
         }
         .leaderboard {
           margin-top: 30px;
           border-top: 1px solid #ccc;
           padding-top: 10px;
+          font-family: inherit;
         }
         .leaderboard table {
           width: 100%;
