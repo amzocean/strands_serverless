@@ -24,13 +24,13 @@ export default function Game() {
   // Colors
   const spangramColor = "#FFD966";
   const otherColors = [
-    "#FFE5D9", "#FFD7BA", "#FEC89A", "#FAEDCD",
-    "#D8F3DC", "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6"
+    "#FDE2E4", "#FAE2EF", "#FAF6C0", "#D8F3DC",
+    "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Fixed cell size for SVG
-  const cellSize = 50;
-  // Increase offset distance so each connector segment is trimmed at both ends
+  // Grid cell size
+  const cellSize = 70;
+  // Distance from letter center for offset
   const offsetDist = 15;
 
   useEffect(() => {
@@ -38,9 +38,15 @@ export default function Game() {
     fetchLeaderboard();
   }, []);
 
+  // Fetch game data
   const fetchGameData = () => {
     axios.get("/api/game")
       .then(response => {
+        console.log("Fetched game data:", response.data);
+        // For extra clarity, log the valid_words and word_paths keys
+        console.log("Valid words:", response.data.valid_words);
+        console.log("Word paths keys:", Object.keys(response.data.word_paths || {}));
+  
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
@@ -53,14 +59,19 @@ export default function Game() {
       })
       .catch(error => console.error("Error fetching game:", error));
   };
+  
 
+  // Fetch leaderboard
   const fetchLeaderboard = () => {
     axios.get("/api/leaderboard")
-      .then(response => setLeaderboard(response.data))
+      .then(response => {
+        console.log("Fetched leaderboard:", response.data);
+        setLeaderboard(response.data);
+      })
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Actual dictionary check using Free Dictionary API.
+  // Check dictionary
   const isValidEnglish = async (word) => {
     if (word.length < 4) return false;
     try {
@@ -71,13 +82,15 @@ export default function Game() {
     }
   };
 
-  // Enforce adjacency: if new letter is not adjacent to the last selected letter, clear selection.
+  // Enforce adjacency
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
+      // If there's a submissionStatus showing, reset it & clear selection
       setSubmissionStatus("");
       setSelectedLetters([]);
     }
+
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
     const alreadyUsed =
       game &&
@@ -85,13 +98,16 @@ export default function Game() {
         const path = game.word_paths[word];
         return path && path.some(coord => coord[0] === row && coord[1] === col);
       });
+
     if (alreadySelected || alreadyUsed) return;
 
+    // Check adjacency if there's an existing selection
     if (selectedLetters.length > 0) {
       const last = selectedLetters[selectedLetters.length - 1];
       const rowDiff = Math.abs(row - last.row);
       const colDiff = Math.abs(col - last.col);
       if (rowDiff > 1 || colDiff > 1) {
+        console.log("Non-adjacent letter clicked. Clearing previous selection.");
         setSelectedLetters([{ letter, row, col }]);
         return;
       }
@@ -99,104 +115,153 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // Helper: Given two points, trim the segment by offset from each end.
-  const trimSegment = (x1, y1, x2, y2, offset) => {
+  // Trim line segments so they don't overlap letter centers
+  function trimSegment(x1, y1, x2, y2, offset) {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const len = Math.sqrt(dx*dx + dy*dy);
-    if (len < offset * 2) return { x1, y1, x2, y2 };
-    const ratioStart = offset / len;
-    const ratioEnd = (len - offset) / len;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    if (length < offset * 2) {
+      return { x1, y1, x2, y2 };
+    }
+    const ratioStart = offset / length;
+    const ratioEnd = (length - offset) / length;
     const x1t = x1 + dx * ratioStart;
     const y1t = y1 + dy * ratioStart;
     const x2t = x1 + dx * ratioEnd;
     const y2t = y1 + dy * ratioEnd;
     return { x1: x1t, y1: y1t, x2: x2t, y2: y2t };
-  };
-
-  // Render current selection as individual lines between each consecutive letter.
-  const currentSelectionLines = [];
-  for (let i = 0; i < selectedLetters.length - 1; i++) {
-    const p1 = selectedLetters[i];
-    const p2 = selectedLetters[i+1];
-    const x1 = p1.col * cellSize + cellSize / 2;
-    const y1 = p1.row * cellSize + cellSize / 2;
-    const x2 = p2.col * cellSize + cellSize / 2;
-    const y2 = p2.row * cellSize + cellSize / 2;
-    const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
-    currentSelectionLines.push(
-      <line
-        key={`line-${i}`}
-        x1={tx1}
-        y1={ty1}
-        x2={tx2}
-        y2={ty2}
-        stroke="red"
-        strokeWidth="3"
-        strokeOpacity="0.5"
-        strokeLinecap="round"
-      />
-    );
   }
 
-  // For found words, we can assume the path is continuous. (Could also break into segments if needed.)
-  const foundWordPolylines = foundWords.map(word => {
-    const path = game?.word_paths[word];
-    if (!path) return null;
-    // Convert grid coordinates to pixel coordinates.
-    const coords = path.map(([r, c]) => [c * cellSize + cellSize / 2, r * cellSize + cellSize / 2]);
-    // For simplicity, trim only the start and end points.
-    if (coords.length < 2) return null;
-    const firstPair = trimSegment(...coords[0], ...coords[1], offsetDist);
-    const lastPair = trimSegment(...coords[coords.length - 2], ...coords[coords.length - 1], offsetDist);
-    const newCoords = [ [firstPair.x1, firstPair.y1], ...coords.slice(1, coords.length - 1), [lastPair.x2, lastPair.y2] ];
-    const points = newCoords.map(([xx, yy]) => `${xx},${yy}`).join(" ");
-    return (
-      <polyline
-        key={word}
-        points={points}
-        fill="none"
-        stroke={colorMapping[word] || "blue"}
-        strokeWidth="3"
-        strokeOpacity="0.4"
-        strokeLinecap="round"
-      />
-    );
-  });
+  // Build lines for current selection
+  function buildCurrentSelectionLines() {
+    const lines = [];
+    for (let i = 0; i < selectedLetters.length - 1; i++) {
+      const p1 = selectedLetters[i];
+      const p2 = selectedLetters[i + 1];
+      const x1 = p1.col * cellSize + cellSize / 2;
+      const y1 = p1.row * cellSize + cellSize / 2;
+      const x2 = p2.col * cellSize + cellSize / 2;
+      const y2 = p2.row * cellSize + cellSize / 2;
 
+      const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
+      lines.push(
+        <line
+          key={`selection-line-${i}`}
+          x1={tx1}
+          y1={ty1}
+          x2={tx2}
+          y2={ty2}
+          stroke="red"
+          strokeWidth="3"
+          strokeOpacity="0.5"
+          strokeLinecap="round"
+        />
+      );
+    }
+    return lines;
+  }
+
+  // Build lines for each found word
+  function buildFoundWordLines(word) {
+    if (!game) return null;
+    console.log(`buildFoundWordLines for word="${word}"`);
+    const path = game.word_paths[word];
+    console.log(`path for "${word}" =>`, path);
+  
+    if (!path || path.length < 2) {
+      console.log(`No path or path length < 2 for "${word}" => no lines drawn`);
+      return null;
+    }
+  
+    const lines = [];
+    for (let i = 0; i < path.length - 1; i++) {
+      const [r1, c1] = path[i];
+      const [r2, c2] = path[i + 1];
+      // Convert row/col to x/y center
+      const x1 = c1 * cellSize + cellSize / 2;
+      const y1 = r1 * cellSize + cellSize / 2;
+      const x2 = c2 * cellSize + cellSize / 2;
+      const y2 = r2 * cellSize + cellSize / 2;
+  
+      // Trim segment so it doesn't overlap letter centers
+      const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
+  
+      // Now actually push the <line> element
+      lines.push(
+        <line
+          key={`${word}-line-${i}`}
+          x1={tx1}
+          y1={ty1}
+          x2={tx2}
+          y2={ty2}
+          stroke="red"
+          strokeWidth="3"
+          strokeOpacity="0.3"
+          strokeLinecap="round"
+        />
+      );
+      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`,
+        { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
+    }
+  
+    return lines;
+  }
+  
+  
+
+  // Submit word
   const submitWord = async () => {
-    if (puzzleComplete || !game) return;
+    if (!game || puzzleComplete) return;
+  
     const word = selectedLetters.map(l => l.letter).join("");
+    console.log("Submitting word:", word);
+  
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
+  
     if (game.valid_words.includes(word)) {
+      console.log("Word is in game.valid_words => correct");
       if (!foundWords.includes(word)) {
+        console.log("Adding new found word:", word);
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
+  
         if (word === hintedWord) setHintedWord("");
       }
     } else {
+      console.log("Word not in game.valid_words => FAIL or dictionary check");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
+  
       if (await isValidEnglish(word)) {
+        console.log("Incrementing hintCounter because it's a valid English word");
         setHintCounter(prev => prev + 1);
       }
     }
+  
+    // Log out the foundWords after adding the new word
+    console.log("foundWords after submission:", nextFoundWords);
+  
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
+  
     if (nextFoundWords.length === game.valid_words.length) {
+      console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
       setTimeout(() => setShowPopup(true), 500);
     }
   };
+  
 
+  // Clear selection
   const clearSelection = () => {
     setSelectedLetters([]);
     setSubmissionStatus("");
   };
 
+  // Color for solved cells
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -208,9 +273,16 @@ export default function Game() {
     return undefined;
   };
 
-  const isCellSelected = (row, col) =>
-    selectedLetters.some(l => l.row === row && l.col === col);
+  // Flatten foundWord lines so they all render
+  const foundWordLines = foundWords.flatMap(word => {
+    const lines = buildFoundWordLines(word);
+    console.log(`Lines for word="${word}" =>`, lines);
+    return lines || [];
+  });
+  console.log("Final foundWordLines array =>", foundWordLines);
+  
 
+  // Generate emoji score from attemptSequence
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
@@ -250,11 +322,13 @@ export default function Game() {
     }
   };
 
+  // Submit final score
   const submitScore = () => {
     if (!playerName.trim()) return;
     const emojiScore = generateEmojiScore();
     axios.post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
+        console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
         resetGame();
       })
@@ -273,45 +347,22 @@ export default function Game() {
     fetchGameData();
   };
 
-  const toggleTutorial = () => {
-    setShowTutorial(prev => !prev);
-  };
-
   if (!game) return <p>Loading...</p>;
 
+  // Calculate progress
   const progressPercent = game.valid_words.length > 0
     ? (foundWords.length / game.valid_words.length) * 100
     : 0;
 
+  // Label for hint button
   const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
 
+  // Dimensions for SVG
   const svgWidth = game.letter_grid[0].length * cellSize;
   const svgHeight = game.letter_grid.length * cellSize;
 
   return (
     <div className="container">
-      {/* Tutorial Button */}
-      <button className="tutorial-button" onClick={toggleTutorial}>?</button>
-
-      {/* Tutorial Modal */}
-      {showTutorial && (
-        <div className="tutorial-modal">
-          <div className="tutorial-content">
-            <h2>How to Play 🎉</h2>
-            <ul>
-              <li>🔍 Find all hidden words matching the theme!</li>
-              <li>👆 Select letters by tapping; each must be adjacent (including diagonals).</li>
-              <li>🔒 Each letter can only be used once!</li>
-              <li>✅ Press SUBMIT to check your word.</li>
-              <li>💡 After 2 valid wrong submissions, the HINT button unlocks.</li>
-              <li>❌ Use CLEAR to reset your selection.</li>
-              <li>🏆 Solve all words and submit your score!</li>
-            </ul>
-            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
-          </div>
-        </div>
-      )}
-
       {/* Theme Pill */}
       <div className="theme-pill">Theme: {game.theme}</div>
 
@@ -324,9 +375,9 @@ export default function Game() {
         </div>
       </div>
 
-      {/* SVG Grid */}
+      {/* Main SVG */}
       <svg width={svgWidth} height={svgHeight} className="grid-svg">
-        {/* 1) Draw background rects */}
+        {/* Grid cells */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -346,46 +397,25 @@ export default function Game() {
           })
         )}
 
-        {/* 2) Draw found words' connectors */}
-        {foundWordPolylines}
+        {/* Found words connectors */}
+        {foundWordLines}
 
-        {/* 3) Draw current selection connectors as separate lines */}
-        {selectedLetters.length > 1 &&
-          selectedLetters.slice(0, -1).map((_, i) => {
-            const p1 = selectedLetters[i];
-            const p2 = selectedLetters[i + 1];
-            const x1 = p1.col * cellSize + cellSize / 2;
-            const y1 = p1.row * cellSize + cellSize / 2;
-            const x2 = p2.col * cellSize + cellSize / 2;
-            const y2 = p2.row * cellSize + cellSize / 2;
-            const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
-            return (
-              <line
-                key={`line-${i}`}
-                x1={tx1}
-                y1={ty1}
-                x2={tx2}
-                y2={ty2}
-                stroke="red"
-                strokeWidth="3"
-                strokeOpacity="0.5"
-                strokeLinecap="round"
-              />
-            );
-          })
-        }
+        {/* Current selection connectors */}
+        {buildCurrentSelectionLines()}
 
-        {/* 4) Draw letters on top */}
+        {/* Letters on top */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
             const y = rowIndex * cellSize;
             const centerX = x + cellSize / 2;
             const centerY = y + cellSize / 2;
-            const currentlySelected = selectedLetters.some(l => l.row === rowIndex && l.col === colIndex);
+
+            const isSelected = selectedLetters.some(l => l.row === rowIndex && l.col === colIndex);
             const isHinted = hintedWord &&
               game.word_paths[hintedWord] &&
               game.word_paths[hintedWord].some(coord => coord[0] === rowIndex && coord[1] === colIndex);
+
             return (
               <text
                 key={`text-${rowIndex}-${colIndex}`}
@@ -395,7 +425,7 @@ export default function Game() {
                 textAnchor="middle"
                 onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
                 style={{
-                  fill: currentlySelected ? "red" : (isHinted ? "#2196F3" : "#000"),
+                  fill: isSelected ? "red" : (isHinted ? "#2196F3" : "#000"),
                   fontSize: "24px",
                   fontWeight: "bold",
                   cursor: "pointer",
@@ -428,9 +458,14 @@ export default function Game() {
       </div>
 
       {/* Live Score */}
-      <div className="live-score">{generateEmojiScore()}</div>
+      <div className="live-score">
+        {attemptSequence.map(attempt => {
+          if (attempt === "FAIL") return "⚫";
+          return attempt === game?.spangram ? "🟡" : "🟢";
+        }).join("")}
+      </div>
 
-      {/* Popup */}
+      {/* Popup on puzzle complete */}
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -480,58 +515,11 @@ export default function Game() {
 
       <style jsx>{`
         .container {
-          position: relative;
           text-align: center;
           padding: 10px;
           background-color: #fafafa;
           color: #000;
           font-family: inherit;
-        }
-        .tutorial-button {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background-color: #64b5f6;
-          border: none;
-          border-radius: 50%;
-          width: 35px;
-          height: 35px;
-          font-size: 1.2rem;
-          color: #fff;
-          cursor: pointer;
-        }
-        .tutorial-modal {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .tutorial-content {
-          background: #fff;
-          color: #000;
-          padding: 20px;
-          border-radius: 10px;
-          max-width: 500px;
-          width: 90%;
-          text-align: left;
-        }
-        .tutorial-content h2 {
-          margin-top: 0;
-        }
-        .close-tutorial {
-          margin-top: 15px;
-          padding: 10px 20px;
-          background-color: #68b684;
-          color: #fff;
-          border: none;
-          cursor: pointer;
-          font-size: 16px;
         }
         .theme-pill {
           display: inline-flex;
@@ -687,6 +675,9 @@ export default function Game() {
           .selected-letters {
             color: red;
           }
+          .grid-svg {
+            border: 1px solid #444;
+          }
           .progress-bar-container {
             background-color: #333;
           }
@@ -729,9 +720,6 @@ export default function Game() {
           .leaderboard th,
           .leaderboard td {
             border-color: #555;
-          }
-          .letter-button.hint-tile span {
-            color: #1976D2 !important;
           }
         }
       `}</style>
