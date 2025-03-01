@@ -14,7 +14,7 @@ export default function Home() {
       <div style={styles.linkWrapper}>
         <a href="https://docs.google.com/forms/d/1cOw1rXbv4vyC9VxVoQ8CHwS_6bPHUd0-UQ4L14tfNLE/edit" 
            style={styles.link} target="_blank" rel="noopener noreferrer">
-          SIGNUP for Eid Milan
+          SIGNUP FOR EID MILAN
         </a>
 
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSchi1k4GpPBmw7uQuxnFXbxBfQWE_QtM8qR_dn3wVhkwDvQ7Q/viewform?usp=header" 
