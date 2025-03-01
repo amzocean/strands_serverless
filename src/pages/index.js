@@ -19,7 +19,7 @@ export default function Home() {
 
         <a href="https://docs.google.com/forms/d/e/1FAIpQLSchi1k4GpPBmw7uQuxnFXbxBfQWE_QtM8qR_dn3wVhkwDvQ7Q/viewform?usp=header" 
            style={styles.link} target="_blank" rel="noopener noreferrer">
-          STALLS REGISTERATION
+          REGISTER YOUR STALL
         </a>
 
         <Link href="/game" style={styles.link}>
