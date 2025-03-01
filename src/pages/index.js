@@ -5,6 +5,7 @@ export default function Game() {
   const [game, setGame] = useState(null);
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [foundWords, setFoundWords] = useState([]);
+  const [foundRoutes, setFoundRoutes] = useState({}); // Store user-selected routes
   const [attemptSequence, setAttemptSequence] = useState([]);
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [hintedWord, setHintedWord] = useState("");
@@ -30,11 +31,11 @@ export default function Game() {
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Increased cell size for easier mobile play
+  // Grid cell size
   const cellSize = 70;
   const offsetDist = 15;
 
-  // Reference for the SVG element (used for touch coordinate calculations)
+  // Reference for SVG element
   const svgRef = useRef(null);
 
   // Toggle tutorial modal
@@ -51,8 +52,6 @@ export default function Game() {
     axios.get("/api/game")
       .then(response => {
         console.log("Fetched game data:", response.data);
-        console.log("Valid words:", response.data.valid_words);
-        console.log("Word paths keys:", Object.keys(response.data.word_paths || {}));
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
@@ -69,7 +68,6 @@ export default function Game() {
   const fetchLeaderboard = () => {
     axios.get("/api/leaderboard")
       .then(response => {
-        console.log("Fetched leaderboard:", response.data);
         setLeaderboard(response.data);
       })
       .catch(error => console.error("Error fetching leaderboard:", error));
@@ -85,7 +83,29 @@ export default function Game() {
     }
   };
 
-  // Handle tap selection as before
+  // Helper to compare two routes (order-insensitive).
+  function isSameRoute(routeA, routeB) {
+    if (!routeA || !routeB || routeA.length !== routeB.length) return false;
+    const format = (coord) =>
+      coord.row !== undefined ? `${coord.row},${coord.col}` : `${coord[0]},${coord[1]}`;
+    const setA = routeA.map(format).sort();
+    const setB = routeB.map(format).sort();
+    return setA.every((val, index) => val === setB[index]);
+  }
+
+  // Decide which route to use for a given word: user route if it matches the default set of cells, else default route.
+  function getEffectiveRoute(word) {
+    if (!game || !game.word_paths) return null;
+    const defaultRoute = game.word_paths[word];
+    const userRoute = foundRoutes[word];
+    if (userRoute && isSameRoute(userRoute, defaultRoute)) {
+      return userRoute;
+    } else {
+      return defaultRoute;
+    }
+  }
+
+  // Tap-based letter selection
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -113,8 +133,7 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // Touch events for swipe-to-submit mode
-
+  // --- Swipe-to-submit Handlers ---
   const handleTouchStart = (e) => {
     e.preventDefault();
     setIsSwiping(false);
@@ -139,18 +158,27 @@ export default function Game() {
       const rect = svgRef.current.getBoundingClientRect();
       const x = touch.clientX - rect.left;
       const y = touch.clientY - rect.top;
-      const col = Math.floor(x / cellSize);
-      const row = Math.floor(y / cellSize);
-      if (row >= 0 && row < game.letter_grid.length && col >= 0 && col < game.letter_grid[0].length) {
-        if (!selectedLetters.some(l => l.row === row && l.col === col)) {
-          if (selectedLetters.length === 0) {
-            setSelectedLetters([{ letter: game.letter_grid[row][col], row, col }]);
-          } else {
-            const last = selectedLetters[selectedLetters.length - 1];
-            const rowDiff = Math.abs(row - last.row);
-            const colDiff = Math.abs(col - last.col);
-            if (rowDiff <= 1 && colDiff <= 1) {
-              setSelectedLetters(prev => [...prev, { letter: game.letter_grid[row][col], row, col }]);
+      const candidateCol = Math.floor(x / cellSize);
+      const candidateRow = Math.floor(y / cellSize);
+      if (candidateRow >= 0 && candidateRow < game.letter_grid.length && candidateCol >= 0 && candidateCol < game.letter_grid[0].length) {
+        // Calculate the center of the candidate cell
+        const centerX = candidateCol * cellSize + cellSize / 2;
+        const centerY = candidateRow * cellSize + cellSize / 2;
+        const dx = x - centerX;
+        const dy = y - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        // Only add if touch is within ~1/3 of the cell center
+        if (distance < cellSize / 3) {
+          if (!selectedLetters.some(l => l.row === candidateRow && l.col === candidateCol)) {
+            if (selectedLetters.length === 0) {
+              setSelectedLetters([{ letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
+            } else {
+              const last = selectedLetters[selectedLetters.length - 1];
+              const rowDiff = Math.abs(candidateRow - last.row);
+              const colDiff = Math.abs(candidateCol - last.col);
+              if (rowDiff <= 1 && colDiff <= 1) {
+                setSelectedLetters(prev => [...prev, { letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
+              }
             }
           }
         }
@@ -166,6 +194,7 @@ export default function Game() {
     setIsSwiping(false);
   };
 
+  // Utility: Trim line segments so they don't overlap cell centers
   function trimSegment(x1, y1, x2, y2, offset) {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -182,6 +211,7 @@ export default function Game() {
     return { x1: x1t, y1: y1t, x2: x2t, y2: y2t };
   }
 
+  // Build lines for the currently selected letters
   function buildCurrentSelectionLines() {
     const lines = [];
     for (let i = 0; i < selectedLetters.length - 1; i++) {
@@ -209,19 +239,26 @@ export default function Game() {
     return lines;
   }
 
+  // Build lines for a solved word
   function buildFoundWordLines(word) {
     if (!game) return null;
     console.log(`buildFoundWordLines for word="${word}"`);
-    const path = game.word_paths[word];
-    console.log(`path for "${word}" =>`, path);
-    if (!path || path.length < 2) {
-      console.log(`No path or path length < 2 for "${word}" => no lines drawn`);
+    const route = getEffectiveRoute(word);
+    console.log(`Using route for "${word}":`, route);
+    if (!route || route.length < 2) {
+      console.log(`No valid route for "${word}" => no lines drawn`);
       return null;
     }
     const lines = [];
-    for (let i = 0; i < path.length - 1; i++) {
-      const [r1, c1] = path[i];
-      const [r2, c2] = path[i + 1];
+    for (let i = 0; i < route.length - 1; i++) {
+      let r1, c1, r2, c2;
+      if (route[0].row !== undefined) {
+        r1 = route[i].row; c1 = route[i].col;
+        r2 = route[i + 1].row; c2 = route[i + 1].col;
+      } else {
+        [r1, c1] = route[i];
+        [r2, c2] = route[i + 1];
+      }
       const x1 = c1 * cellSize + cellSize / 2;
       const y1 = r1 * cellSize + cellSize / 2;
       const x2 = c2 * cellSize + cellSize / 2;
@@ -240,9 +277,21 @@ export default function Game() {
           strokeLinecap="round"
         />
       );
-      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`, { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
+      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => coords:`, { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
     }
     return lines;
+  }
+
+  // Decide the final route for each word
+  function getEffectiveRoute(word) {
+    if (!game || !game.word_paths) return null;
+    const defaultRoute = game.word_paths[word];
+    const userRoute = foundRoutes[word];
+    if (userRoute && isSameRoute(userRoute, defaultRoute)) {
+      return userRoute;
+    } else {
+      return defaultRoute;
+    }
   }
 
   const submitWord = async () => {
@@ -251,6 +300,7 @@ export default function Game() {
     console.log("Submitting word:", word);
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
+    const routeToSave = [...selectedLetters]; // Capture user-selected route
     if (game.valid_words.includes(word)) {
       console.log("Word is in game.valid_words => correct");
       if (!foundWords.includes(word)) {
@@ -258,6 +308,9 @@ export default function Game() {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
+        // We'll store the user route. We'll only actually use it if isSameRoute
+        // with the default route, see getEffectiveRoute above.
+        setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
         if (word === hintedWord) setHintedWord("");
       }
     } else {
@@ -270,7 +323,7 @@ export default function Game() {
           setHintCounter(prev => prev + 1);
           setHintWordsUsed(prev => [...prev, word]);
         } else {
-          console.log("Word has already been used for hint; not incrementing hintCounter");
+          console.log("Word already used for hint; not incrementing hintCounter");
         }
       }
     }
@@ -290,17 +343,26 @@ export default function Game() {
     setSubmissionStatus("");
   };
 
+  // For coloring cells, use getEffectiveRoute as well
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
-      const path = game.word_paths[word];
-      if (path && path.some(coord => coord[0] === row && coord[1] === col)) {
+      const route = getEffectiveRoute(word);
+      if (!route) continue;
+      // Check if route is an array of objects or array of arrays
+      const found = route.some(coord =>
+        coord.row !== undefined
+          ? coord.row === row && coord.col === col
+          : coord[0] === row && coord[1] === col
+      );
+      if (found) {
         return colorMapping[word] || undefined;
       }
     }
     return undefined;
   };
 
+  // Build all lines for found words
   const foundWordLines = foundWords.flatMap(word => {
     const lines = buildFoundWordLines(word);
     console.log(`Lines for word="${word}" =>`, lines);
@@ -351,7 +413,6 @@ export default function Game() {
     const emojiScore = generateEmojiScore();
     axios.post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
-        console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
         setShowPopup(false); // Keep final state on screen; do not reset puzzle.
       })
@@ -367,6 +428,7 @@ export default function Game() {
     setSubmissionStatus("");
     setHintedWord("");
     setPuzzleComplete(false);
+    setFoundRoutes({});
     fetchGameData();
   };
 
@@ -396,7 +458,7 @@ export default function Game() {
               <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-              <li>✅ Press <strong>SUBMIT</strong> to check your word.</li>
+              <li>✅ Press <strong>SUBMIT</strong> (or swipe) to check your word.</li>
               <li>💡 Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
               <li>🏆 Solve them all and submit your score to the leaderboard!</li>
@@ -445,10 +507,13 @@ export default function Game() {
           })
         )}
 
+        {/* Lines for solved words */}
         {foundWordLines}
 
+        {/* Lines for current selection */}
         {buildCurrentSelectionLines()}
 
+        {/* Letters on top */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -632,7 +697,7 @@ export default function Game() {
           border: 1px solid #ccc;
           margin: 0 auto;
           display: block;
-          touch-action: none; /* Prevent default scrolling on grid touch */
+          touch-action: none;
         }
         .progress-bar-container {
           margin: 20px auto;
