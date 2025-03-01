@@ -28,9 +28,8 @@ export default function Game() {
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Grid cell size
+  // Increased cell size
   const cellSize = 70;
-  // Distance from letter center for offset
   const offsetDist = 15;
 
   useEffect(() => {
@@ -38,15 +37,13 @@ export default function Game() {
     fetchLeaderboard();
   }, []);
 
-  // Fetch game data
   const fetchGameData = () => {
     axios.get("/api/game")
       .then(response => {
         console.log("Fetched game data:", response.data);
-        // For extra clarity, log the valid_words and word_paths keys
         console.log("Valid words:", response.data.valid_words);
         console.log("Word paths keys:", Object.keys(response.data.word_paths || {}));
-  
+
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
@@ -59,9 +56,7 @@ export default function Game() {
       })
       .catch(error => console.error("Error fetching game:", error));
   };
-  
 
-  // Fetch leaderboard
   const fetchLeaderboard = () => {
     axios.get("/api/leaderboard")
       .then(response => {
@@ -71,7 +66,6 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Check dictionary
   const isValidEnglish = async (word) => {
     if (word.length < 4) return false;
     try {
@@ -82,15 +76,12 @@ export default function Game() {
     }
   };
 
-  // Enforce adjacency
   const handleLetterClick = (letter, row, col) => {
-    if (puzzleComplete) return;
+    if (puzzleComplete) return; // Disable clicks if puzzle is complete
     if (submissionStatus) {
-      // If there's a submissionStatus showing, reset it & clear selection
       setSubmissionStatus("");
       setSelectedLetters([]);
     }
-
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
     const alreadyUsed =
       game &&
@@ -98,10 +89,8 @@ export default function Game() {
         const path = game.word_paths[word];
         return path && path.some(coord => coord[0] === row && coord[1] === col);
       });
-
     if (alreadySelected || alreadyUsed) return;
 
-    // Check adjacency if there's an existing selection
     if (selectedLetters.length > 0) {
       const last = selectedLetters[selectedLetters.length - 1];
       const rowDiff = Math.abs(row - last.row);
@@ -115,11 +104,10 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // Trim line segments so they don't overlap letter centers
   function trimSegment(x1, y1, x2, y2, offset) {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const length = Math.sqrt(dx * dx + dy * dy);
+    const length = Math.sqrt(dx*dx + dy*dy);
     if (length < offset * 2) {
       return { x1, y1, x2, y2 };
     }
@@ -132,7 +120,6 @@ export default function Game() {
     return { x1: x1t, y1: y1t, x2: x2t, y2: y2t };
   }
 
-  // Build lines for current selection
   function buildCurrentSelectionLines() {
     const lines = [];
     for (let i = 0; i < selectedLetters.length - 1; i++) {
@@ -161,32 +148,27 @@ export default function Game() {
     return lines;
   }
 
-  // Build lines for each found word
   function buildFoundWordLines(word) {
     if (!game) return null;
     console.log(`buildFoundWordLines for word="${word}"`);
     const path = game.word_paths[word];
     console.log(`path for "${word}" =>`, path);
-  
+
     if (!path || path.length < 2) {
       console.log(`No path or path length < 2 for "${word}" => no lines drawn`);
       return null;
     }
-  
+
     const lines = [];
     for (let i = 0; i < path.length - 1; i++) {
       const [r1, c1] = path[i];
       const [r2, c2] = path[i + 1];
-      // Convert row/col to x/y center
       const x1 = c1 * cellSize + cellSize / 2;
       const y1 = r1 * cellSize + cellSize / 2;
       const x2 = c2 * cellSize + cellSize / 2;
       const y2 = r2 * cellSize + cellSize / 2;
-  
-      // Trim segment so it doesn't overlap letter centers
+
       const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
-  
-      // Now actually push the <line> element
       lines.push(
         <line
           key={`${word}-line-${i}`}
@@ -203,22 +185,19 @@ export default function Game() {
       console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`,
         { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
     }
-  
+
     return lines;
   }
-  
-  
 
-  // Submit word
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
-  
+
     const word = selectedLetters.map(l => l.letter).join("");
     console.log("Submitting word:", word);
-  
+
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-  
+
     if (game.valid_words.includes(word)) {
       console.log("Word is in game.valid_words => correct");
       if (!foundWords.includes(word)) {
@@ -226,42 +205,38 @@ export default function Game() {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-  
+
         if (word === hintedWord) setHintedWord("");
       }
     } else {
       console.log("Word not in game.valid_words => FAIL or dictionary check");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-  
+
       if (await isValidEnglish(word)) {
         console.log("Incrementing hintCounter because it's a valid English word");
         setHintCounter(prev => prev + 1);
       }
     }
-  
-    // Log out the foundWords after adding the new word
+
     console.log("foundWords after submission:", nextFoundWords);
-  
+
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
-  
+
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
       setTimeout(() => setShowPopup(true), 500);
     }
   };
-  
 
-  // Clear selection
   const clearSelection = () => {
     setSelectedLetters([]);
     setSubmissionStatus("");
   };
 
-  // Color for solved cells
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -273,16 +248,13 @@ export default function Game() {
     return undefined;
   };
 
-  // Flatten foundWord lines so they all render
   const foundWordLines = foundWords.flatMap(word => {
     const lines = buildFoundWordLines(word);
     console.log(`Lines for word="${word}" =>`, lines);
     return lines || [];
   });
   console.log("Final foundWordLines array =>", foundWordLines);
-  
 
-  // Generate emoji score from attemptSequence
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
@@ -292,7 +264,6 @@ export default function Game() {
       .join("");
   };
 
-  // HINT logic
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
@@ -312,7 +283,7 @@ export default function Game() {
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
+    const shareText = `Eid Milan Game #1\nScore: ${emojiScore}\nwww.eidmilan.com`;
     if (navigator.share) {
       navigator.share({ title: "Eid Milan Game", text: shareText })
         .catch(error => console.error("Error sharing:", error));
@@ -322,7 +293,7 @@ export default function Game() {
     }
   };
 
-  // Submit final score
+  // 1) Remove resetGame() => just close popup
   const submitScore = () => {
     if (!playerName.trim()) return;
     const emojiScore = generateEmojiScore();
@@ -330,11 +301,13 @@ export default function Game() {
       .then(response => {
         console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
-        resetGame();
+        // Do NOT reset the puzzle, just close the popup
+        setShowPopup(false);
       })
       .catch(error => console.error("Error submitting score:", error));
   };
 
+  // If we ever do want to reset, we call resetGame. But not after name submission
   const resetGame = () => {
     setShowPopup(false);
     setPlayerName("");
@@ -349,24 +322,19 @@ export default function Game() {
 
   if (!game) return <p>Loading...</p>;
 
-  // Calculate progress
   const progressPercent = game.valid_words.length > 0
     ? (foundWords.length / game.valid_words.length) * 100
     : 0;
 
-  // Label for hint button
   const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
 
-  // Dimensions for SVG
   const svgWidth = game.letter_grid[0].length * cellSize;
   const svgHeight = game.letter_grid.length * cellSize;
 
   return (
     <div className="container">
-      {/* Theme Pill */}
       <div className="theme-pill">Theme: {game.theme}</div>
 
-      {/* Selected Letters */}
       <div className="selected-letters-container">
         <div className="selected-letters">
           {submissionStatus !== ""
@@ -375,9 +343,7 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Main SVG */}
       <svg width={svgWidth} height={svgHeight} className="grid-svg">
-        {/* Grid cells */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -397,13 +363,10 @@ export default function Game() {
           })
         )}
 
-        {/* Found words connectors */}
         {foundWordLines}
 
-        {/* Current selection connectors */}
         {buildCurrentSelectionLines()}
 
-        {/* Letters on top */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -439,7 +402,6 @@ export default function Game() {
         )}
       </svg>
 
-      {/* Progress Bar */}
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}>
           <span className="progress-text">
@@ -448,16 +410,17 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="action-buttons">
         <button onClick={clearSelection} className="clear-button">CLEAR</button>
         <button onClick={handleHint} className="hint-button" disabled={hintCounter < 2}>
           {hintButtonText}
         </button>
-        <button onClick={submitWord} className="submit-button">SUBMIT</button>
+        {/* 2) Disable SUBMIT button if puzzleComplete */}
+        <button onClick={submitWord} className="submit-button" disabled={puzzleComplete}>
+          SUBMIT
+        </button>
       </div>
 
-      {/* Live Score */}
       <div className="live-score">
         {attemptSequence.map(attempt => {
           if (attempt === "FAIL") return "⚫";
@@ -465,7 +428,6 @@ export default function Game() {
         }).join("")}
       </div>
 
-      {/* Popup on puzzle complete */}
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -477,12 +439,12 @@ export default function Game() {
             placeholder="Your name"
             className="name-input"
           />
+          {/* These two buttons should be same size */}
           <button onClick={submitScore} className="submit-button">Submit Score</button>
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
 
-      {/* Leaderboard */}
       <div className="leaderboard">
         <h2 className="leaderboard-title">LEADERBOARD</h2>
         <table>
@@ -503,7 +465,6 @@ export default function Game() {
         </table>
       </div>
 
-      {/* Global Font Import */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
         html, body {
@@ -630,6 +591,14 @@ export default function Game() {
           border: 1px solid #ccc;
           font-family: inherit;
         }
+        /* Make popup buttons the same size */
+        .popup .submit-button,
+        .popup .share-button {
+          padding: 10px 15px;
+          font-size: 16px;
+          margin: 10px 5px 0;
+          display: inline-block;
+        }
         .leaderboard {
           margin-top: 30px;
           border-top: 1px solid #ccc;
@@ -709,6 +678,14 @@ export default function Game() {
             background-color: #3a3a3a;
             color: #fff;
             border: 1px solid #666;
+          }
+          /* Make sure popup buttons also match in dark mode */
+          .popup .submit-button,
+          .popup .share-button {
+            padding: 10px 15px;
+            font-size: 16px;
+            margin: 10px 5px 0;
+            display: inline-block;
           }
           .leaderboard th {
             background-color: #333;
