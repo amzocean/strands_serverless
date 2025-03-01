@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 export default function Game() {
@@ -9,13 +9,14 @@ export default function Game() {
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [hintedWord, setHintedWord] = useState("");
   const [hintCounter, setHintCounter] = useState(0);
-  const [hintWordsUsed, setHintWordsUsed] = useState([]);  // New state to track hint-counted words
+  const [hintWordsUsed, setHintWordsUsed] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
+  const [isSwiping, setIsSwiping] = useState(false);
 
   // Emoji system
   const spangramEmoji = "🟡";
@@ -33,7 +34,10 @@ export default function Game() {
   const cellSize = 70;
   const offsetDist = 15;
 
-  // Re-add a toggle function for the tutorial
+  // Reference for the SVG element (for touch coordinate calculations)
+  const svgRef = useRef(null);
+
+  // Toggle tutorial modal
   const toggleTutorial = () => {
     setShowTutorial(!showTutorial);
   };
@@ -82,6 +86,7 @@ export default function Game() {
     }
   };
 
+  // Existing tap handler remains for onClick events.
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -110,10 +115,65 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
+  // New touch event handlers for swipe submission
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    setIsSwiping(false);
+    if (e.touches.length > 0 && svgRef.current) {
+      const touch = e.touches[0];
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+      // Start selection with the touched cell (if valid)
+      if (row >= 0 && row < game.letter_grid.length && col >= 0 && col < game.letter_grid[0].length) {
+        handleLetterClick(game.letter_grid[row][col], row, col);
+      }
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    e.preventDefault();
+    setIsSwiping(true);
+    if (e.touches.length > 0 && svgRef.current) {
+      const touch = e.touches[0];
+      const rect = svgRef.current.getBoundingClientRect();
+      const x = touch.clientX - rect.left;
+      const y = touch.clientY - rect.top;
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+      if (row >= 0 && row < game.letter_grid.length && col >= 0 && col < game.letter_grid[0].length) {
+        // Only add if not already selected and if adjacent to last letter
+        if (!selectedLetters.some(l => l.row === row && l.col === col)) {
+          if (selectedLetters.length === 0) {
+            setSelectedLetters([{ letter: game.letter_grid[row][col], row, col }]);
+          } else {
+            const last = selectedLetters[selectedLetters.length - 1];
+            const rowDiff = Math.abs(row - last.row);
+            const colDiff = Math.abs(col - last.col);
+            if (rowDiff <= 1 && colDiff <= 1) {
+              setSelectedLetters(prev => [...prev, { letter: game.letter_grid[row][col], row, col }]);
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
+    if (isSwiping && selectedLetters.length > 1) {
+      submitWord();
+    }
+    setIsSwiping(false);
+  };
+
   function trimSegment(x1, y1, x2, y2, offset) {
     const dx = x2 - x1;
     const dy = y2 - y1;
-    const length = Math.sqrt(dx*dx + dy*dy);
+    const length = Math.sqrt(dx * dx + dy * dy);
     if (length < offset * 2) {
       return { x1, y1, x2, y2 };
     }
@@ -191,7 +251,6 @@ export default function Game() {
       console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`,
         { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
     }
-
     return lines;
   }
 
@@ -220,7 +279,6 @@ export default function Game() {
       setSubmissionStatus(`${word} ❌`);
 
       if (await isValidEnglish(word)) {
-        // Only count the valid English word once for hints.
         if (!hintWordsUsed.includes(word)) {
           console.log("Incrementing hintCounter because it's a valid English word and not counted before");
           setHintCounter(prev => prev + 1);
@@ -312,7 +370,7 @@ export default function Game() {
       .then(response => {
         console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false); // Keep the final state on screen; don't reset the game.
+        setShowPopup(false); // Keep final state; do not reset puzzle.
       })
       .catch(error => console.error("Error submitting score:", error));
   };
@@ -375,7 +433,16 @@ export default function Game() {
         </div>
       </div>
 
-      <svg width={svgWidth} height={svgHeight} className="grid-svg">
+      {/* SVG with touch events for swipe submission */}
+      <svg
+        ref={svgRef}
+        width={svgWidth}
+        height={svgHeight}
+        className="grid-svg"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -405,12 +472,10 @@ export default function Game() {
             const y = rowIndex * cellSize;
             const centerX = x + cellSize / 2;
             const centerY = y + cellSize / 2;
-
             const isSelected = selectedLetters.some(l => l.row === rowIndex && l.col === colIndex);
             const isHinted = hintedWord &&
               game.word_paths[hintedWord] &&
               game.word_paths[hintedWord].some(coord => coord[0] === rowIndex && coord[1] === colIndex);
-
             return (
               <text
                 key={`text-${rowIndex}-${colIndex}`}
