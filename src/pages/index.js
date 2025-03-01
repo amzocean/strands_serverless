@@ -12,7 +12,7 @@ export default function Home() {
 
       {/* Links Section */}
       <div style={styles.linkWrapper}>
-        <a href="https://docs.google.com/forms/d/1cOw1rXbv4vyC9VxVoQ8CHwS_6bPHUd0-UQ4L14tfNLE/edit" 
+        <a href="https://forms.gle/ygCP2sjcj4T71Yvn9" 
            style={styles.link} target="_blank" rel="noopener noreferrer">
           SIGNUP FOR EID MILAN
         </a>
