@@ -6,27 +6,32 @@ export default function Game() {
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [foundWords, setFoundWords] = useState([]);
   const [attemptSequence, setAttemptSequence] = useState([]);
-  const [submissionStatus, setSubmissionStatus] = useState(""); // holds word + ✅ or ❌
-  const [hintedWord, setHintedWord] = useState(""); // holds the currently hinted unsolved word
-  const [hintCounter, setHintCounter] = useState(0); // counts valid wrong submissions for hints
+  const [submissionStatus, setSubmissionStatus] = useState("");
+  const [hintedWord, setHintedWord] = useState("");
+  const [hintCounter, setHintCounter] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false); // new state for tutorial modal
+  const [showTutorial, setShowTutorial] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
-  const [puzzleComplete, setPuzzleComplete] = useState(false); // Prevent extra attempts
+  const [puzzleComplete, setPuzzleComplete] = useState(false);
 
-  // Emoji system for scoring
+  // Emoji system
   const spangramEmoji = "🟡";
   const correctEmoji = "🟢";
   const failEmoji = "⚫";
 
-  // Updated softer, modern colors
+  // Colors
   const spangramColor = "#FFD966";
   const otherColors = [
     "#FFE5D9", "#FFD7BA", "#FEC89A", "#FAEDCD",
     "#D8F3DC", "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6"
   ];
+
+  // Fixed cell size for SVG
+  const cellSize = 50;
+  // Increase offset distance so each connector segment is trimmed at both ends
+  const offsetDist = 15;
 
   useEffect(() => {
     fetchGameData();
@@ -55,24 +60,23 @@ export default function Game() {
       .catch(error => console.error("Error fetching leaderboard:", error));
   };
 
-  // Actual dictionary check using the Free Dictionary API.
+  // Actual dictionary check using Free Dictionary API.
   const isValidEnglish = async (word) => {
     if (word.length < 4) return false;
     try {
       const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
       return Array.isArray(response.data);
-    } catch (error) {
+    } catch {
       return false;
     }
   };
 
-  // When a new letter is clicked, enforce that it is adjacent to the last selected letter.
+  // Enforce adjacency: if new letter is not adjacent to the last selected letter, clear selection.
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
       setSubmissionStatus("");
       setSelectedLetters([]);
-      // Do not clear hintedWord so that the hint remains until solved.
     }
     const alreadySelected = selectedLetters.some(l => l.row === row && l.col === col);
     const alreadyUsed =
@@ -88,7 +92,6 @@ export default function Game() {
       const rowDiff = Math.abs(row - last.row);
       const colDiff = Math.abs(col - last.col);
       if (rowDiff > 1 || colDiff > 1) {
-        // Not adjacent: clear previous selection.
         setSelectedLetters([{ letter, row, col }]);
         return;
       }
@@ -96,21 +99,82 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // Make submitWord asynchronous to await dictionary check.
+  // Helper: Given two points, trim the segment by offset from each end.
+  const trimSegment = (x1, y1, x2, y2, offset) => {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < offset * 2) return { x1, y1, x2, y2 };
+    const ratioStart = offset / len;
+    const ratioEnd = (len - offset) / len;
+    const x1t = x1 + dx * ratioStart;
+    const y1t = y1 + dy * ratioStart;
+    const x2t = x1 + dx * ratioEnd;
+    const y2t = y1 + dy * ratioEnd;
+    return { x1: x1t, y1: y1t, x2: x2t, y2: y2t };
+  };
+
+  // Render current selection as individual lines between each consecutive letter.
+  const currentSelectionLines = [];
+  for (let i = 0; i < selectedLetters.length - 1; i++) {
+    const p1 = selectedLetters[i];
+    const p2 = selectedLetters[i+1];
+    const x1 = p1.col * cellSize + cellSize / 2;
+    const y1 = p1.row * cellSize + cellSize / 2;
+    const x2 = p2.col * cellSize + cellSize / 2;
+    const y2 = p2.row * cellSize + cellSize / 2;
+    const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
+    currentSelectionLines.push(
+      <line
+        key={`line-${i}`}
+        x1={tx1}
+        y1={ty1}
+        x2={tx2}
+        y2={ty2}
+        stroke="red"
+        strokeWidth="3"
+        strokeOpacity="0.5"
+        strokeLinecap="round"
+      />
+    );
+  }
+
+  // For found words, we can assume the path is continuous. (Could also break into segments if needed.)
+  const foundWordPolylines = foundWords.map(word => {
+    const path = game?.word_paths[word];
+    if (!path) return null;
+    // Convert grid coordinates to pixel coordinates.
+    const coords = path.map(([r, c]) => [c * cellSize + cellSize / 2, r * cellSize + cellSize / 2]);
+    // For simplicity, trim only the start and end points.
+    if (coords.length < 2) return null;
+    const firstPair = trimSegment(...coords[0], ...coords[1], offsetDist);
+    const lastPair = trimSegment(...coords[coords.length - 2], ...coords[coords.length - 1], offsetDist);
+    const newCoords = [ [firstPair.x1, firstPair.y1], ...coords.slice(1, coords.length - 1), [lastPair.x2, lastPair.y2] ];
+    const points = newCoords.map(([xx, yy]) => `${xx},${yy}`).join(" ");
+    return (
+      <polyline
+        key={word}
+        points={points}
+        fill="none"
+        stroke={colorMapping[word] || "blue"}
+        strokeWidth="3"
+        strokeOpacity="0.4"
+        strokeLinecap="round"
+      />
+    );
+  });
+
   const submitWord = async () => {
     if (puzzleComplete || !game) return;
     const word = selectedLetters.map(l => l.letter).join("");
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-
     if (game.valid_words.includes(word)) {
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-        if (word === hintedWord) {
-          setHintedWord("");
-        }
+        if (word === hintedWord) setHintedWord("");
       }
     } else {
       nextAttemptSequence.push("FAIL");
@@ -122,7 +186,6 @@ export default function Game() {
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
-
     if (nextFoundWords.length === game.valid_words.length) {
       setPuzzleComplete(true);
       setTimeout(() => setShowPopup(true), 500);
@@ -132,7 +195,6 @@ export default function Game() {
   const clearSelection = () => {
     setSelectedLetters([]);
     setSubmissionStatus("");
-    // Do not clear hintedWord so that hint remains until solved.
   };
 
   const getCellColor = (row, col) => {
@@ -158,7 +220,7 @@ export default function Game() {
       .join("");
   };
 
-  // HINT: Pick one unsolved word, giving spangram as a hint only if it's the last unsolved word.
+  // HINT logic
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
@@ -178,11 +240,9 @@ export default function Game() {
 
   const handleShareScore = () => {
     const emojiScore = generateEmojiScore();
-    const shareText = `Eid Milan Game #1\nScore: ${emojiScore}\nwww.eidmilan.com`;
+    const shareText = `Eid Milan Game\nScore: ${emojiScore}\n[Your URL]`;
     if (navigator.share) {
-      navigator.share({
-        text: shareText
-      })
+      navigator.share({ title: "Eid Milan Game", text: shareText })
         .catch(error => console.error("Error sharing:", error));
     } else {
       navigator.clipboard.writeText(shareText)
@@ -198,9 +258,7 @@ export default function Game() {
         setLeaderboard(response.data.leaderboard);
         resetGame();
       })
-      .catch(error => {
-        console.error("Error submitting score:", error);
-      });
+      .catch(error => console.error("Error submitting score:", error));
   };
 
   const resetGame = () => {
@@ -215,50 +273,49 @@ export default function Game() {
     fetchGameData();
   };
 
-  // Tutorial modal toggle.
   const toggleTutorial = () => {
     setShowTutorial(prev => !prev);
   };
 
   if (!game) return <p>Loading...</p>;
 
-  const progressPercent =
-    game.valid_words.length > 0
-      ? (foundWords.length / game.valid_words.length) * 100
-      : 0;
+  const progressPercent = game.valid_words.length > 0
+    ? (foundWords.length / game.valid_words.length) * 100
+    : 0;
 
   const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
+
+  const svgWidth = game.letter_grid[0].length * cellSize;
+  const svgHeight = game.letter_grid.length * cellSize;
 
   return (
     <div className="container">
       {/* Tutorial Button */}
       <button className="tutorial-button" onClick={toggleTutorial}>?</button>
 
-    {/* Tutorial Modal */}
-    {showTutorial && (
-      <div className="tutorial-modal">
-        <div className="tutorial-content">
-          <h2>How to Play 🎉</h2>
-          <ul>
-            <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
-            <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
-            <li>🔒 <strong>Each letter can be used only once and all words occupy the board entirely!</strong></li>
-            <li>✅ Press <strong>SUBMIT</strong> to check your word.</li>
-            <li>💡 Get hints! Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
-            <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
-            <li>🏆 Solve them all and submit your score to the leaderboard!</li>
-          </ul>
-          <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <div className="tutorial-modal">
+          <div className="tutorial-content">
+            <h2>How to Play 🎉</h2>
+            <ul>
+              <li>🔍 Find all hidden words matching the theme!</li>
+              <li>👆 Select letters by tapping; each must be adjacent (including diagonals).</li>
+              <li>🔒 Each letter can only be used once!</li>
+              <li>✅ Press SUBMIT to check your word.</li>
+              <li>💡 After 2 valid wrong submissions, the HINT button unlocks.</li>
+              <li>❌ Use CLEAR to reset your selection.</li>
+              <li>🏆 Solve all words and submit your score!</li>
+            </ul>
+            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
+          </div>
         </div>
-      </div>
-    )}
-
-
+      )}
 
       {/* Theme Pill */}
       <div className="theme-pill">Theme: {game.theme}</div>
 
-      {/* Selected Letters Area */}
+      {/* Selected Letters */}
       <div className="selected-letters-container">
         <div className="selected-letters">
           {submissionStatus !== ""
@@ -267,42 +324,90 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Grid */}
-      <div
-        className="grid-container"
-        style={{
-          gridTemplateColumns:
-            game && game.letter_grid && game.letter_grid[0]
-              ? `repeat(${game.letter_grid[0].length}, 1fr)`
-              : "repeat(6, 1fr)",
-          gridTemplateRows:
-            game && game.letter_grid
-              ? `repeat(${game.letter_grid.length}, 1fr)`
-              : "repeat(8, 1fr)"
-        }}
-      >
+      {/* SVG Grid */}
+      <svg width={svgWidth} height={svgHeight} className="grid-svg">
+        {/* 1) Draw background rects */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
+            const x = colIndex * cellSize;
+            const y = rowIndex * cellSize;
             const cellColor = getCellColor(rowIndex, colIndex);
-            const currentlySelected = isCellSelected(rowIndex, colIndex);
-            const isHinted = hintedWord &&
-              game.word_paths[hintedWord] &&
-              game.word_paths[hintedWord].some(
-                (coord) => coord[0] === rowIndex && coord[1] === colIndex
-              );
             return (
-              <button
-                key={`${rowIndex}-${colIndex}`}
-                onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
-                className={`letter-button ${currentlySelected ? "selected-tile" : ""} ${isHinted ? "hint-tile" : ""}`}
-                style={cellColor ? { backgroundColor: cellColor } : {}}
-              >
-                <span>{letter}</span>
-              </button>
+              <rect
+                key={`cell-${rowIndex}-${colIndex}`}
+                x={x}
+                y={y}
+                width={cellSize}
+                height={cellSize}
+                fill={cellColor || "#fff"}
+                stroke="#ccc"
+              />
             );
           })
         )}
-      </div>
+
+        {/* 2) Draw found words' connectors */}
+        {foundWordPolylines}
+
+        {/* 3) Draw current selection connectors as separate lines */}
+        {selectedLetters.length > 1 &&
+          selectedLetters.slice(0, -1).map((_, i) => {
+            const p1 = selectedLetters[i];
+            const p2 = selectedLetters[i + 1];
+            const x1 = p1.col * cellSize + cellSize / 2;
+            const y1 = p1.row * cellSize + cellSize / 2;
+            const x2 = p2.col * cellSize + cellSize / 2;
+            const y2 = p2.row * cellSize + cellSize / 2;
+            const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
+            return (
+              <line
+                key={`line-${i}`}
+                x1={tx1}
+                y1={ty1}
+                x2={tx2}
+                y2={ty2}
+                stroke="red"
+                strokeWidth="3"
+                strokeOpacity="0.5"
+                strokeLinecap="round"
+              />
+            );
+          })
+        }
+
+        {/* 4) Draw letters on top */}
+        {game.letter_grid.map((row, rowIndex) =>
+          row.map((letter, colIndex) => {
+            const x = colIndex * cellSize;
+            const y = rowIndex * cellSize;
+            const centerX = x + cellSize / 2;
+            const centerY = y + cellSize / 2;
+            const currentlySelected = selectedLetters.some(l => l.row === rowIndex && l.col === colIndex);
+            const isHinted = hintedWord &&
+              game.word_paths[hintedWord] &&
+              game.word_paths[hintedWord].some(coord => coord[0] === rowIndex && coord[1] === colIndex);
+            return (
+              <text
+                key={`text-${rowIndex}-${colIndex}`}
+                x={centerX}
+                y={centerY}
+                dominantBaseline="middle"
+                textAnchor="middle"
+                onClick={() => handleLetterClick(letter, rowIndex, colIndex)}
+                style={{
+                  fill: currentlySelected ? "red" : (isHinted ? "#2196F3" : "#000"),
+                  fontSize: "24px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  pointerEvents: "auto"
+                }}
+              >
+                {letter}
+              </text>
+            );
+          })
+        )}
+      </svg>
 
       {/* Progress Bar */}
       <div className="progress-bar-container">
@@ -313,7 +418,7 @@ export default function Game() {
         </div>
       </div>
 
-      {/* Action Buttons (CLEAR, HINT, SUBMIT) */}
+      {/* Action Buttons */}
       <div className="action-buttons">
         <button onClick={clearSelection} className="clear-button">CLEAR</button>
         <button onClick={handleHint} className="hint-button" disabled={hintCounter < 2}>
@@ -322,10 +427,10 @@ export default function Game() {
         <button onClick={submitWord} className="submit-button">SUBMIT</button>
       </div>
 
-      {/* Live Score Display */}
+      {/* Live Score */}
       <div className="live-score">{generateEmojiScore()}</div>
 
-      {/* Popup on Puzzle Complete */}
+      {/* Popup */}
       {showPopup && (
         <div className="popup">
           <p>🎉 Puzzle Completed! 🎉</p>
@@ -366,8 +471,7 @@ export default function Game() {
       {/* Global Font Import */}
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
-        html,
-        body {
+        html, body {
           margin: 0;
           padding: 0;
           font-family: "Montserrat", sans-serif;
@@ -375,7 +479,6 @@ export default function Game() {
       `}</style>
 
       <style jsx>{`
-        /* Container & Global Styles */
         .container {
           position: relative;
           text-align: center;
@@ -384,8 +487,6 @@ export default function Game() {
           color: #000;
           font-family: inherit;
         }
-
-        /* Tutorial Button */
         .tutorial-button {
           position: absolute;
           top: 10px;
@@ -399,15 +500,13 @@ export default function Game() {
           color: #fff;
           cursor: pointer;
         }
-
-        /* Tutorial Modal */
         .tutorial-modal {
           position: fixed;
           top: 0;
           left: 0;
           width: 100%;
           height: 100%;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -434,8 +533,6 @@ export default function Game() {
           cursor: pointer;
           font-size: 16px;
         }
-
-        /* Theme Pill */
         .theme-pill {
           display: inline-flex;
           align-items: center;
@@ -448,70 +545,22 @@ export default function Game() {
           padding: 0 16px;
           border-radius: 20px;
           margin-bottom: 10px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        /* Outer container for selected letters (fixed height) */
         .selected-letters-container {
           height: 20px;
           margin-bottom: 10px;
         }
-        /* Selected Letters: red text or submissionStatus if set */
         .selected-letters {
           font-size: 1.2rem;
           font-weight: 600;
           color: red;
         }
-
-        /* Grid */
-        .grid-container {
-          display: grid;
-          gap: 5px;
-          max-width: 400px;
+        .grid-svg {
+          border: 1px solid #ccc;
           margin: 0 auto;
+          display: block;
         }
-        .letter-button {
-          width: 100%;
-          padding-top: 100%;
-          position: relative;
-          cursor: pointer;
-          color: #000;
-          font-family: inherit;
-          border: none;
-          background-color: #fff;
-        }
-        .letter-button span {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 1.8rem;
-          font-weight: bold;
-          color: #000;
-        }
-        .letter-button.selected-tile span {
-          color: red;
-        }
-        /* Hint tile style: animate letter text by flashing opacity; base color remains blue */
-        .hint-tile span {
-          color: #2196F3;
-          animation: hintFlashText 1.5s infinite;
-        }
-        @keyframes hintFlashText {
-          0% { opacity: 1; }
-          50% { opacity: 0.7; }
-          100% { opacity: 1; }
-        }
-
-        /* Live Score Display */
-        .live-score {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 10px 0;
-          color: #333;
-        }
-
-        /* Progress Bar */
         .progress-bar-container {
           margin: 20px auto;
           width: 300px;
@@ -534,8 +583,6 @@ export default function Game() {
         .progress-text {
           z-index: 1;
         }
-
-        /* Action Buttons */
         .action-buttons {
           display: flex;
           justify-content: space-between;
@@ -567,18 +614,12 @@ export default function Game() {
           background-color: #90CAF9;
           color: #fff;
         }
-        .share-button {
-          background-color: #64b5f6;
-          color: #fff;
-          padding: 10px 15px;
-          font-size: 16px;
-          border: none;
-          cursor: pointer;
-          margin-top: 10px;
-          margin-left: 10px;
+        .live-score {
+          font-size: 1.5rem;
+          font-weight: 600;
+          margin: 10px 0;
+          color: #333;
         }
-
-        /* Popup */
         .popup {
           position: fixed;
           top: 50%;
@@ -601,8 +642,6 @@ export default function Game() {
           border: 1px solid #ccc;
           font-family: inherit;
         }
-
-        /* Leaderboard */
         .leaderboard {
           margin-top: 30px;
           border-top: 1px solid #ccc;
@@ -628,21 +667,14 @@ export default function Game() {
           background-color: #f2f2f2;
           font-weight: bold;
         }
-
-        /* Mobile responsiveness */
         @media (max-width: 600px) {
           .grid-container {
             max-width: 90vw;
-          }
-          .letter-button span {
-            font-size: 1.5rem;
           }
           .progress-bar-container {
             width: 80%;
           }
         }
-
-        /* Dark mode overrides */
         @media (prefers-color-scheme: dark) {
           .container {
             background-color: #121212;
@@ -653,16 +685,6 @@ export default function Game() {
             color: #fff;
           }
           .selected-letters {
-            color: red;
-          }
-          .letter-button {
-            background-color: #1e1e1e;
-            color: #fff;
-          }
-          .letter-button span {
-            color: #fff;
-          }
-          .letter-button.selected-tile span {
             color: red;
           }
           .progress-bar-container {
@@ -685,10 +707,6 @@ export default function Game() {
           }
           .hint-button:disabled {
             background-color: #90CAF9;
-            color: #fff;
-          }
-          .share-button {
-            background-color: #1976D2;
             color: #fff;
           }
           .popup {
