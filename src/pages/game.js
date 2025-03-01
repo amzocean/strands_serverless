@@ -12,7 +12,8 @@ export default function Game() {
   const [hintCounter, setHintCounter] = useState(0);
   const [hintWordsUsed, setHintWordsUsed] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(false);
+  // Set showTutorial to true so the tutorial pops up on page load.
+  const [showTutorial, setShowTutorial] = useState(true);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
@@ -31,11 +32,11 @@ export default function Game() {
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Grid cell size
+  // Grid cell size and offset for connectors (optimized for mobile)
   const cellSize = 70;
   const offsetDist = 15;
 
-  // Reference for SVG element
+  // Reference for the SVG element (for touch coordinate calculations)
   const svgRef = useRef(null);
 
   // Toggle tutorial modal
@@ -83,7 +84,7 @@ export default function Game() {
     }
   };
 
-  // Helper to compare two routes (order-insensitive).
+  // Helper to compare two routes (order-insensitive)
   function isSameRoute(routeA, routeB) {
     if (!routeA || !routeB || routeA.length !== routeB.length) return false;
     const format = (coord) =>
@@ -93,16 +94,13 @@ export default function Game() {
     return setA.every((val, index) => val === setB[index]);
   }
 
-  // Decide which route to use for a given word: user route if it matches the default set of cells, else default route.
+  // Decide which route to use for a given word:
+  // Use the user-selected route only if its set of cells is identical to the default route.
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
     const userRoute = foundRoutes[word];
-    if (userRoute && isSameRoute(userRoute, defaultRoute)) {
-      return userRoute;
-    } else {
-      return defaultRoute;
-    }
+    return userRoute && isSameRoute(userRoute, defaultRoute) ? userRoute : defaultRoute;
   }
 
   // Tap-based letter selection
@@ -161,13 +159,12 @@ export default function Game() {
       const candidateCol = Math.floor(x / cellSize);
       const candidateRow = Math.floor(y / cellSize);
       if (candidateRow >= 0 && candidateRow < game.letter_grid.length && candidateCol >= 0 && candidateCol < game.letter_grid[0].length) {
-        // Calculate the center of the candidate cell
+        // Calculate the center of the candidate cell and add only if touch is near center
         const centerX = candidateCol * cellSize + cellSize / 2;
         const centerY = candidateRow * cellSize + cellSize / 2;
         const dx = x - centerX;
         const dy = y - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        // Only add if touch is within ~1/3 of the cell center
         if (distance < cellSize / 3) {
           if (!selectedLetters.some(l => l.row === candidateRow && l.col === candidateCol)) {
             if (selectedLetters.length === 0) {
@@ -211,7 +208,6 @@ export default function Game() {
     return { x1: x1t, y1: y1t, x2: x2t, y2: y2t };
   }
 
-  // Build lines for the currently selected letters
   function buildCurrentSelectionLines() {
     const lines = [];
     for (let i = 0; i < selectedLetters.length - 1; i++) {
@@ -239,7 +235,7 @@ export default function Game() {
     return lines;
   }
 
-  // Build lines for a solved word
+  // Build connectors for a solved word using the effective route.
   function buildFoundWordLines(word) {
     if (!game) return null;
     console.log(`buildFoundWordLines for word="${word}"`);
@@ -282,18 +278,6 @@ export default function Game() {
     return lines;
   }
 
-  // Decide the final route for each word
-  function getEffectiveRoute(word) {
-    if (!game || !game.word_paths) return null;
-    const defaultRoute = game.word_paths[word];
-    const userRoute = foundRoutes[word];
-    if (userRoute && isSameRoute(userRoute, defaultRoute)) {
-      return userRoute;
-    } else {
-      return defaultRoute;
-    }
-  }
-
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
     const word = selectedLetters.map(l => l.letter).join("");
@@ -308,8 +292,7 @@ export default function Game() {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-        // We'll store the user route. We'll only actually use it if isSameRoute
-        // with the default route, see getEffectiveRoute above.
+        // Save user route only if it matches default (checked in getEffectiveRoute)
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
         if (word === hintedWord) setHintedWord("");
       }
@@ -343,13 +326,12 @@ export default function Game() {
     setSubmissionStatus("");
   };
 
-  // For coloring cells, use getEffectiveRoute as well
+  // For cell background coloring, use the effective route.
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
       const route = getEffectiveRoute(word);
       if (!route) continue;
-      // Check if route is an array of objects or array of arrays
       const found = route.some(coord =>
         coord.row !== undefined
           ? coord.row === row && coord.col === col
@@ -362,7 +344,6 @@ export default function Game() {
     return undefined;
   };
 
-  // Build all lines for found words
   const foundWordLines = foundWords.flatMap(word => {
     const lines = buildFoundWordLines(word);
     console.log(`Lines for word="${word}" =>`, lines);
@@ -414,7 +395,7 @@ export default function Game() {
     axios.post("/api/submit-score", { name: playerName, score: emojiScore })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false); // Keep final state on screen; do not reset puzzle.
+        setShowPopup(false); // Do not reset the puzzle; keep final state for screenshots.
       })
       .catch(error => console.error("Error submitting score:", error));
   };
@@ -452,13 +433,19 @@ export default function Game() {
       {showTutorial && (
         <div className="tutorial-modal">
           <div className="tutorial-content">
-            <h2>How to Play 🎉</h2>
+            <button className="close-tutorial-cross" onClick={toggleTutorial}>×</button>
+            <h2>How to Play</h2>
+            <img 
+              src="/gameplay.gif" 
+              alt="Gameplay Example" 
+              style={{ width: "50%", height: "50%", maxWidth: "400px", marginBottom: "1em" }} 
+            />
             <ul>
               <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
-              <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
+              <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-              <li>✅ Press <strong>SUBMIT</strong> (or swipe) to check your word.</li>
+              <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
               <li>💡 Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
               <li>🏆 Solve them all and submit your score to the raffleboard!</li>
@@ -507,13 +494,9 @@ export default function Game() {
           })
         )}
 
-        {/* Lines for solved words */}
         {foundWordLines}
-
-        {/* Lines for current selection */}
         {buildCurrentSelectionLines()}
 
-        {/* Letters on top */}
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -653,6 +636,7 @@ export default function Game() {
           z-index: 9998;
         }
         .tutorial-content {
+          position: relative;
           background: #fff;
           color: #000;
           padding: 20px;
@@ -660,6 +644,18 @@ export default function Game() {
           max-width: 500px;
           width: 90%;
           text-align: left;
+        }
+        .close-tutorial-cross {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background: transparent;
+          border: none;
+          font-size: 2rem;
+          font-weight: bold;
+          color: #333;
+          cursor: pointer;
+          z-index: 1;
         }
         .close-tutorial {
           margin-top: 15px;
