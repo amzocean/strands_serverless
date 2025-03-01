@@ -9,6 +9,7 @@ export default function Game() {
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [hintedWord, setHintedWord] = useState("");
   const [hintCounter, setHintCounter] = useState(0);
+  const [hintWordsUsed, setHintWordsUsed] = useState([]);  // New state to track hint-counted words
   const [showPopup, setShowPopup] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
@@ -31,6 +32,11 @@ export default function Game() {
   // Increased cell size
   const cellSize = 70;
   const offsetDist = 15;
+
+  // Re-add a toggle function for the tutorial
+  const toggleTutorial = () => {
+    setShowTutorial(!showTutorial);
+  };
 
   useEffect(() => {
     fetchGameData();
@@ -77,7 +83,7 @@ export default function Game() {
   };
 
   const handleLetterClick = (letter, row, col) => {
-    if (puzzleComplete) return; // Disable clicks if puzzle is complete
+    if (puzzleComplete) return;
     if (submissionStatus) {
       setSubmissionStatus("");
       setSelectedLetters([]);
@@ -214,8 +220,14 @@ export default function Game() {
       setSubmissionStatus(`${word} ❌`);
 
       if (await isValidEnglish(word)) {
-        console.log("Incrementing hintCounter because it's a valid English word");
-        setHintCounter(prev => prev + 1);
+        // Only count the valid English word once for hints.
+        if (!hintWordsUsed.includes(word)) {
+          console.log("Incrementing hintCounter because it's a valid English word and not counted before");
+          setHintCounter(prev => prev + 1);
+          setHintWordsUsed(prev => [...prev, word]);
+        } else {
+          console.log("Word has already been used for hint; not incrementing hintCounter");
+        }
       }
     }
 
@@ -293,7 +305,6 @@ export default function Game() {
     }
   };
 
-  // 1) Remove resetGame() => just close popup
   const submitScore = () => {
     if (!playerName.trim()) return;
     const emojiScore = generateEmojiScore();
@@ -301,13 +312,11 @@ export default function Game() {
       .then(response => {
         console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
-        // Do NOT reset the puzzle, just close the popup
-        setShowPopup(false);
+        setShowPopup(false); // Keep the final state on screen; don't reset the game.
       })
       .catch(error => console.error("Error submitting score:", error));
   };
 
-  // If we ever do want to reset, we call resetGame. But not after name submission
   const resetGame = () => {
     setShowPopup(false);
     setPlayerName("");
@@ -333,6 +342,29 @@ export default function Game() {
 
   return (
     <div className="container">
+      {/* Tutorial Button */}
+      <button className="tutorial-button" onClick={toggleTutorial}>?</button>
+
+      {/* Tutorial Modal */}
+      {showTutorial && (
+        <div className="tutorial-modal">
+          <div className="tutorial-content">
+            <h2>How to Play 🎉</h2>
+            <ul>
+              <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
+              <li>👆 <strong>Select letters</strong> by tapping—each new letter must be next to the last (including diagonals).</li>
+              <li>🔒 <strong>Each letter can be used only once!</strong></li>
+              <li>🔒 <strong>All words occupy the board entirely!</strong></li>
+              <li>✅ Press <strong>SUBMIT</strong> to check your word.</li>
+              <li>💡 Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
+              <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
+              <li>🏆 Solve them all and submit your score to the leaderboard!</li>
+            </ul>
+            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
+          </div>
+        </div>
+      )}
+
       <div className="theme-pill">Theme: {game.theme}</div>
 
       <div className="selected-letters-container">
@@ -415,7 +447,6 @@ export default function Game() {
         <button onClick={handleHint} className="hint-button" disabled={hintCounter < 2}>
           {hintButtonText}
         </button>
-        {/* 2) Disable SUBMIT button if puzzleComplete */}
         <button onClick={submitWord} className="submit-button" disabled={puzzleComplete}>
           SUBMIT
         </button>
@@ -439,7 +470,6 @@ export default function Game() {
             placeholder="Your name"
             className="name-input"
           />
-          {/* These two buttons should be same size */}
           <button onClick={submitScore} className="submit-button">Submit Score</button>
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
@@ -476,11 +506,56 @@ export default function Game() {
 
       <style jsx>{`
         .container {
+          position: relative;
           text-align: center;
           padding: 10px;
           background-color: #fafafa;
           color: #000;
           font-family: inherit;
+        }
+        .tutorial-button {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          background-color: #64b5f6;
+          border: none;
+          border-radius: 50%;
+          width: 35px;
+          height: 35px;
+          font-size: 1.2rem;
+          color: #fff;
+          cursor: pointer;
+          z-index: 9999;
+        }
+        .tutorial-modal {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9998;
+        }
+        .tutorial-content {
+          background: #fff;
+          color: #000;
+          padding: 20px;
+          border-radius: 10px;
+          max-width: 500px;
+          width: 90%;
+          text-align: left;
+        }
+        .close-tutorial {
+          margin-top: 15px;
+          padding: 10px 20px;
+          background-color: #68b684;
+          color: #fff;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
         }
         .theme-pill {
           display: inline-flex;
@@ -580,6 +655,7 @@ export default function Game() {
           border: 2px solid #333;
           color: #000;
           font-family: inherit;
+          z-index: 10000;
         }
         .popup input {
           padding: 10px;
@@ -591,7 +667,6 @@ export default function Game() {
           border: 1px solid #ccc;
           font-family: inherit;
         }
-        /* Make popup buttons the same size */
         .popup .submit-button,
         .popup .share-button {
           padding: 10px 15px;
@@ -637,6 +712,21 @@ export default function Game() {
             background-color: #121212;
             color: #fff;
           }
+          .tutorial-button {
+            background-color: #64b5f6;
+            color: #fff;
+          }
+          .tutorial-modal {
+            background: rgba(0,0,0,0.5);
+          }
+          .tutorial-content {
+            background: #2a2a2a;
+            color: #fff;
+          }
+          .close-tutorial {
+            background-color: #388e3c;
+            color: #fff;
+          }
           .theme-pill {
             background-color: #333;
             color: #fff;
@@ -673,13 +763,13 @@ export default function Game() {
             background: #2a2a2a;
             border: 2px solid #555;
             color: #fff;
+            z-index: 10000;
           }
           .popup input {
             background-color: #3a3a3a;
             color: #fff;
             border: 1px solid #666;
           }
-          /* Make sure popup buttons also match in dark mode */
           .popup .submit-button,
           .popup .share-button {
             padding: 10px 15px;
