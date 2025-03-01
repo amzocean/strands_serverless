@@ -30,11 +30,11 @@ export default function Game() {
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Increased cell size
+  // Increased cell size for easier mobile play
   const cellSize = 70;
   const offsetDist = 15;
 
-  // Reference for the SVG element (for touch coordinate calculations)
+  // Reference for the SVG element (used for touch coordinate calculations)
   const svgRef = useRef(null);
 
   // Toggle tutorial modal
@@ -53,7 +53,6 @@ export default function Game() {
         console.log("Fetched game data:", response.data);
         console.log("Valid words:", response.data.valid_words);
         console.log("Word paths keys:", Object.keys(response.data.word_paths || {}));
-
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
@@ -86,7 +85,7 @@ export default function Game() {
     }
   };
 
-  // Existing tap handler remains for onClick events.
+  // Handle tap selection as before
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -101,7 +100,6 @@ export default function Game() {
         return path && path.some(coord => coord[0] === row && coord[1] === col);
       });
     if (alreadySelected || alreadyUsed) return;
-
     if (selectedLetters.length > 0) {
       const last = selectedLetters[selectedLetters.length - 1];
       const rowDiff = Math.abs(row - last.row);
@@ -115,7 +113,7 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // New touch event handlers for swipe submission
+  // Touch events for swipe-to-submit mode
 
   const handleTouchStart = (e) => {
     e.preventDefault();
@@ -127,7 +125,6 @@ export default function Game() {
       const y = touch.clientY - rect.top;
       const col = Math.floor(x / cellSize);
       const row = Math.floor(y / cellSize);
-      // Start selection with the touched cell (if valid)
       if (row >= 0 && row < game.letter_grid.length && col >= 0 && col < game.letter_grid[0].length) {
         handleLetterClick(game.letter_grid[row][col], row, col);
       }
@@ -145,7 +142,6 @@ export default function Game() {
       const col = Math.floor(x / cellSize);
       const row = Math.floor(y / cellSize);
       if (row >= 0 && row < game.letter_grid.length && col >= 0 && col < game.letter_grid[0].length) {
-        // Only add if not already selected and if adjacent to last letter
         if (!selectedLetters.some(l => l.row === row && l.col === col)) {
           if (selectedLetters.length === 0) {
             setSelectedLetters([{ letter: game.letter_grid[row][col], row, col }]);
@@ -195,7 +191,6 @@ export default function Game() {
       const y1 = p1.row * cellSize + cellSize / 2;
       const x2 = p2.col * cellSize + cellSize / 2;
       const y2 = p2.row * cellSize + cellSize / 2;
-
       const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
       lines.push(
         <line
@@ -219,12 +214,10 @@ export default function Game() {
     console.log(`buildFoundWordLines for word="${word}"`);
     const path = game.word_paths[word];
     console.log(`path for "${word}" =>`, path);
-
     if (!path || path.length < 2) {
       console.log(`No path or path length < 2 for "${word}" => no lines drawn`);
       return null;
     }
-
     const lines = [];
     for (let i = 0; i < path.length - 1; i++) {
       const [r1, c1] = path[i];
@@ -233,7 +226,6 @@ export default function Game() {
       const y1 = r1 * cellSize + cellSize / 2;
       const x2 = c2 * cellSize + cellSize / 2;
       const y2 = r2 * cellSize + cellSize / 2;
-
       const { x1: tx1, y1: ty1, x2: tx2, y2: ty2 } = trimSegment(x1, y1, x2, y2, offsetDist);
       lines.push(
         <line
@@ -248,21 +240,17 @@ export default function Game() {
           strokeLinecap="round"
         />
       );
-      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`,
-        { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
+      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => line coords=`, { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
     }
     return lines;
   }
 
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
-
     const word = selectedLetters.map(l => l.letter).join("");
     console.log("Submitting word:", word);
-
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-
     if (game.valid_words.includes(word)) {
       console.log("Word is in game.valid_words => correct");
       if (!foundWords.includes(word)) {
@@ -270,14 +258,12 @@ export default function Game() {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-
         if (word === hintedWord) setHintedWord("");
       }
     } else {
       console.log("Word not in game.valid_words => FAIL or dictionary check");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-
       if (await isValidEnglish(word)) {
         if (!hintWordsUsed.includes(word)) {
           console.log("Incrementing hintCounter because it's a valid English word and not counted before");
@@ -288,13 +274,10 @@ export default function Game() {
         }
       }
     }
-
     console.log("foundWords after submission:", nextFoundWords);
-
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
-
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
@@ -370,7 +353,7 @@ export default function Game() {
       .then(response => {
         console.log("Score submitted, new leaderboard:", response.data.leaderboard);
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false); // Keep final state; do not reset puzzle.
+        setShowPopup(false); // Keep final state on screen; do not reset puzzle.
       })
       .catch(error => console.error("Error submitting score:", error));
   };
@@ -433,7 +416,7 @@ export default function Game() {
         </div>
       </div>
 
-      {/* SVG with touch events for swipe submission */}
+      {/* Main SVG with touch events for swipe submission */}
       <svg
         ref={svgRef}
         width={svgWidth}
@@ -649,6 +632,7 @@ export default function Game() {
           border: 1px solid #ccc;
           margin: 0 auto;
           display: block;
+          touch-action: none; /* Prevent default scrolling on grid touch */
         }
         .progress-bar-container {
           margin: 20px auto;
