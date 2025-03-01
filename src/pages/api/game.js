@@ -1,6 +1,6 @@
 // pages/api/game.js
 const gameData = {
-  theme: "Animals",
+  theme: "6TH APRIL 2025",
   letter_grid: [
     [
       "A",
