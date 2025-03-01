@@ -461,7 +461,7 @@ export default function Game() {
               <li>✅ Press <strong>SUBMIT</strong> (or swipe) to check your word.</li>
               <li>💡 Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
-              <li>🏆 Solve them all and submit your score to the leaderboard!</li>
+              <li>🏆 Solve them all and submit your score to the raffleboard!</li>
             </ul>
             <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
           </div>
@@ -589,7 +589,7 @@ export default function Game() {
       )}
 
       <div className="leaderboard">
-        <h2 className="leaderboard-title">LEADERBOARD</h2>
+        <h2 className="leaderboard-title">RAFFLEBOARD</h2>
         <table>
           <thead>
             <tr>
