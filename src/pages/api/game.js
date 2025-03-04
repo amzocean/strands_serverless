@@ -1,5 +1,6 @@
 // pages/api/game.js
 const gameData = {
+  gameId: "game-2025-03-04-BAYAAN1",
   theme: "BAYAAN",
   letter_grid: [
     [
