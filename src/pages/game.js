@@ -491,7 +491,7 @@ export default function Game() {
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
               <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-              <li>💯 <strong>SCORING</strong>+100 Ffor a successful submit. -10 for a wrong submission. -50 for using a HINT.</li>
+              <li>💯 <strong>SCORING</strong>+100 for a successful submit. -10 for a wrong submission. -50 for using a HINT.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection or backtrack your swipe.</li>
               <li>🏆 Solve them all and submit your score to the raffleboard!</li>
             </ul>
