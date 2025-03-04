@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
+// Define summary text as a constant for easy changes.
+const summaryText = "Total 8 words - 5 LD | 3 EN";
+
 export default function Game() {
   const [game, setGame] = useState(null);
   const [selectedLetters, setSelectedLetters] = useState([]);
@@ -19,10 +22,14 @@ export default function Game() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
-  // New state variable for numerical score
+  // Use numerical scoring
   const [score, setScore] = useState(0);
 
-  // Emoji system (kept for compatibility; not used for final scoring)
+  // Scoring rules:
+  // +100 for correct, -10 for wrong (only if word length >= 4), -50 for hint usage (only when new hint)
+  // (Hint: if the requested hint is the same as the currently shown one, ignore.)
+  
+  // Emoji variables (left for legacy display if needed)
   const spangramEmoji = "🟡";
   const correctEmoji = "🟢";
   const failEmoji = "⚫";
@@ -46,15 +53,36 @@ export default function Game() {
     setShowTutorial(!showTutorial);
   };
 
+  // On initial load, check localStorage for completed game state
   useEffect(() => {
     fetchGameData();
     fetchLeaderboard();
+
+    const completed = localStorage.getItem("gameCompleted");
+    if (completed === "true") {
+      const stateString = localStorage.getItem("completedState");
+      if (stateString) {
+        const state = JSON.parse(stateString);
+        setFoundWords(state.foundWords || []);
+        setScore(state.score || 0);
+        setPuzzleComplete(true);
+      }
+    }
   }, []);
 
   const fetchGameData = () => {
     axios.get("/api/game")
       .then(response => {
         console.log("Fetched game data:", response.data);
+        // Assume API returns gameId – e.g., "game-2025-03-04-BAYAAN"
+        const newGameId = response.data.gameId || "default";
+        const storedGameId = localStorage.getItem("gameId");
+        if (storedGameId && storedGameId !== newGameId) {
+          // New game available; clear any previous completed state.
+          localStorage.removeItem("gameCompleted");
+          localStorage.removeItem("completedState");
+        }
+        localStorage.setItem("gameId", newGameId);
         setGame(response.data);
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
@@ -96,7 +124,7 @@ export default function Game() {
     return setA.every((val, index) => val === setB[index]);
   }
 
-  // Decide which route to use for a given word: use user-selected route only if identical to default.
+  // Decide which route to use for a given word
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
@@ -160,23 +188,27 @@ export default function Game() {
       const candidateCol = Math.floor(x / cellSize);
       const candidateRow = Math.floor(y / cellSize);
       if (candidateRow >= 0 && candidateRow < game.letter_grid.length && candidateCol >= 0 && candidateCol < game.letter_grid[0].length) {
-        // Calculate center of candidate cell; only add if near center.
         const centerX = candidateCol * cellSize + cellSize / 2;
         const centerY = candidateRow * cellSize + cellSize / 2;
         const dx = x - centerX;
         const dy = y - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         if (distance < cellSize / 3) {
-          if (!selectedLetters.some(l => l.row === candidateRow && l.col === candidateCol)) {
-            if (selectedLetters.length === 0) {
-              setSelectedLetters([{ letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
-            } else {
-              const last = selectedLetters[selectedLetters.length - 1];
-              const rowDiff = Math.abs(candidateRow - last.row);
-              const colDiff = Math.abs(candidateCol - last.col);
-              if (rowDiff <= 1 && colDiff <= 1) {
-                setSelectedLetters(prev => [...prev, { letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
-              }
+          const existingIndex = selectedLetters.findIndex(l => l.row === candidateRow && l.col === candidateCol);
+          if (existingIndex !== -1) {
+            if (existingIndex < selectedLetters.length - 1) {
+              setSelectedLetters(selectedLetters.slice(0, existingIndex + 1));
+            }
+            return;
+          }
+          if (selectedLetters.length === 0) {
+            setSelectedLetters([{ letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
+          } else {
+            const last = selectedLetters[selectedLetters.length - 1];
+            const rowDiff = Math.abs(candidateRow - last.row);
+            const colDiff = Math.abs(candidateCol - last.col);
+            if (rowDiff <= 1 && colDiff <= 1) {
+              setSelectedLetters(prev => [...prev, { letter: game.letter_grid[candidateRow][candidateCol], row: candidateRow, col: candidateCol }]);
             }
           }
         }
@@ -282,31 +314,36 @@ export default function Game() {
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
     const word = selectedLetters.map(l => l.letter).join("");
+    // Ignore submission if word is less than 4 letters (and do not deduct score)
+    if (word.length < 4) {
+      console.log("Submission ignored: word too short");
+      setSubmissionStatus("Word too short");
+      setSelectedLetters([]);
+      return;
+    }
     console.log("Submitting word:", word);
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
+    let newScore = score;
     const routeToSave = [...selectedLetters]; // Capture user-selected route
     if (game.valid_words.includes(word)) {
-      console.log("Word is in game.valid_words => correct");
+      console.log("Word is correct");
       if (!foundWords.includes(word)) {
-        console.log("Adding new found word:", word);
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
         if (word === hintedWord) setHintedWord("");
-        // Update score: add +100 for a correct submission
-        setScore(prev => prev + 100);
+        newScore += 100;
         if (navigator.vibrate) {
           navigator.vibrate(100);
         }
       }
     } else {
-      console.log("Word not in game.valid_words => FAIL");
+      console.log("Word is incorrect");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      // Update score: subtract 10 for a wrong submission
-      setScore(prev => prev - 10);
+      newScore -= 10;
       if (navigator.vibrate) {
         navigator.vibrate(200);
       }
@@ -314,10 +351,16 @@ export default function Game() {
     console.log("foundWords after submission:", nextFoundWords);
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
+    setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
+      localStorage.setItem("gameCompleted", "true");
+      localStorage.setItem("completedState", JSON.stringify({
+        foundWords: nextFoundWords,
+        score: newScore
+      }));
       setTimeout(() => setShowPopup(true), 500);
     }
   };
@@ -352,37 +395,28 @@ export default function Game() {
   });
   console.log("Final foundWordLines array =>", foundWordLines);
 
-  // Live score now displays the numeric score.
-  const generateEmojiScore = () => {
-    return attemptSequence
-      .map(attempt => {
-        if (attempt === "FAIL") return failEmoji;
-        return game.valid_words.includes(attempt) 
-          ? (attempt === game?.spangram ? spangramEmoji : correctEmoji)
-          : attempt;
-      })
-      .join("");
+  const displayScore = () => {
+    return score;
   };
 
-  // New Hint mechanism: Always available.
-  // Subtract 50 from the score only if the new hint is different from the current one.
+  // Hint mechanism: always available.
+  // When user taps HINT, if the new hint is different from the current one, subtract 50 points and add a "💡" symbol to the score.
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
     if (unsolved.length === 0) return;
-    let newHint;
+    let newHint = "";
     if (unsolved.length > 1 && unsolved.includes(game.spangram)) {
       const nonSpangram = unsolved.filter(word => word !== game.spangram);
       newHint = nonSpangram.length > 0 ? nonSpangram[0] : game.spangram;
     } else {
       newHint = unsolved[0];
     }
-    // Only subtract score if new hint is different
+    // Only subtract points if the new hint differs from the current one.
     if (newHint !== hintedWord) {
+      setHintedWord(newHint);
       setScore(prev => prev - 50);
-      setAttemptSequence(prev => [...prev, "💡"]);
     }
-    setHintedWord(newHint);
   };
 
   const handleShareScore = () => {
@@ -398,10 +432,11 @@ export default function Game() {
 
   const submitScore = () => {
     if (!playerName.trim()) return;
-    axios.post("/api/submit-score", { name: playerName, score })
+    const shareText = `Eid Milan Game #1\nScore: ${score}\nwww.eidmilan.com`;
+    axios.post("/api/submit-score", { name: playerName, score: score })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false);
+        setShowPopup(false); // Keep final state for screenshots.
       })
       .catch(error => console.error("Error submitting score:", error));
   };
@@ -411,12 +446,14 @@ export default function Game() {
     setPlayerName("");
     setFoundWords([]);
     setSelectedLetters([]);
+    setScore(0);
     setAttemptSequence([]);
     setSubmissionStatus("");
     setHintedWord("");
     setPuzzleComplete(false);
     setFoundRoutes({});
-    setScore(0);
+    localStorage.removeItem("gameCompleted");
+    localStorage.removeItem("completedState");
     fetchGameData();
   };
 
@@ -426,7 +463,7 @@ export default function Game() {
     ? (foundWords.length / game.valid_words.length) * 100
     : 0;
 
-  const hintButtonText = "HINT"; // Always available now
+  const hintButtonText = "HINT";
 
   const svgWidth = game.letter_grid[0].length * cellSize;
   const svgHeight = game.letter_grid.length * cellSize;
@@ -438,33 +475,34 @@ export default function Game() {
 
       {/* Tutorial Modal */}
       {showTutorial && (
-  <div className="tutorial-modal">
-    <div className="tutorial-content">
-      <button className="close-tutorial-cross" onClick={toggleTutorial}>×</button>
-      <h2>How to Play</h2>
-      <img 
-        src="/gameplay.gif" 
-        alt="Gameplay Example" 
-        style={{ width: "50%", height: "50%", maxWidth: "400px", marginBottom: "1em" }} 
-      />
-      <ul>
-        <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
-        <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
-        <li>🔒 <strong>Each letter can be used only once!</strong></li>
-        <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-        <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
-        <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>        
-        <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-        <li>💰 <strong>Scoring:</strong> +100 per correct word, -10 per wrong submission, -50 per new hint.</li>
-        <li>🏆 Solve them all and submit your score to the raffleboard!</li>        
-      </ul>
-      <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
-    </div>
-  </div>
-)}
-
+        <div className="tutorial-modal">
+          <div className="tutorial-content">
+            <button className="close-tutorial-cross" onClick={toggleTutorial}>×</button>
+            <h2>How to Play</h2>
+            <img 
+              src="/gameplay.gif" 
+              alt="Gameplay Example" 
+              style={{ width: "50%", height: "50%", maxWidth: "400px", marginBottom: "1em" }} 
+            />
+            <ul>
+              <li>🔍 <strong>Find all hidden words</strong> that match the theme!</li>
+              <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
+              <li>🔒 <strong>Each letter can be used only once!</strong></li>
+              <li>🔒 <strong>All words occupy the board entirely!</strong></li>
+              <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
+              <li>💡 Tap <strong>HINT</strong> to get a hint (each new hint deducts 50 points and adds a 💡 to your score).</li>
+              <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
+              <li>🏆 Solve them all and submit your score to the raffleboard!</li>
+            </ul>
+            <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
+          </div>
+        </div>
+      )}
 
       <div className="theme-pill">Theme: {game.theme}</div>
+      
+      {/* Game summary text */}
+      <div className="game-summary">{summaryText}</div>
 
       <div className="selected-letters-container">
         <div className="selected-letters">
@@ -556,7 +594,7 @@ export default function Game() {
       </div>
 
       <div className="live-score">
-        Score: {score}
+        Score: {displayScore()}
       </div>
 
       {showPopup && (
@@ -681,8 +719,13 @@ export default function Game() {
           background-color: #e9f5ff;
           padding: 0 16px;
           border-radius: 20px;
-          margin-bottom: 10px;
+          margin-bottom: 5px;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .game-summary {
+          font-size: 0.9rem;
+          color: #666;
+          margin-bottom: 10px;
         }
         .selected-letters-container {
           height: 20px;
@@ -746,6 +789,10 @@ export default function Game() {
         }
         .hint-button {
           background-color: #2196F3;
+          color: #fff;
+        }
+        .hint-button:disabled {
+          background-color: #90CAF9;
           color: #fff;
         }
         .live-score {
@@ -877,7 +924,8 @@ export default function Game() {
             background-color: #1976D2;
             color: #fff;
           }
-          .live-score {
+          .hint-button:disabled {
+            background-color: #90CAF9;
             color: #fff;
           }
           .popup {
@@ -908,6 +956,14 @@ export default function Game() {
           .leaderboard th,
           .leaderboard td {
             border-color: #555;
+          }
+          /* Make live score text white in dark mode */
+          .live-score {
+            color: #fff;
+          }
+          /* Dark mode summary text */
+          .game-summary {
+            color: #ccc;
           }
         }
       `}</style>
