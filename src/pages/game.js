@@ -12,15 +12,17 @@ export default function Game() {
   const [hintCounter, setHintCounter] = useState(0);
   const [hintWordsUsed, setHintWordsUsed] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
-  // Set showTutorial to true so the tutorial pops up on page load.
+  // Show tutorial on page load.
   const [showTutorial, setShowTutorial] = useState(true);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
+  // New state variable for numerical score
+  const [score, setScore] = useState(0);
 
-  // Emoji system
+  // Emoji system (kept for compatibility; not used for final scoring)
   const spangramEmoji = "🟡";
   const correctEmoji = "🟢";
   const failEmoji = "⚫";
@@ -32,7 +34,7 @@ export default function Game() {
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Grid cell size and offset for connectors (optimized for mobile)
+  // Grid cell size and offset for connectors
   const cellSize = 70;
   const offsetDist = 15;
 
@@ -94,8 +96,7 @@ export default function Game() {
     return setA.every((val, index) => val === setB[index]);
   }
 
-  // Decide which route to use for a given word:
-  // Use the user-selected route only if its set of cells is identical to the default route.
+  // Decide which route to use for a given word: use user-selected route only if identical to default.
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
@@ -159,7 +160,7 @@ export default function Game() {
       const candidateCol = Math.floor(x / cellSize);
       const candidateRow = Math.floor(y / cellSize);
       if (candidateRow >= 0 && candidateRow < game.letter_grid.length && candidateCol >= 0 && candidateCol < game.letter_grid[0].length) {
-        // Calculate the center of the candidate cell and add only if touch is near center
+        // Calculate center of candidate cell; only add if near center.
         const centerX = candidateCol * cellSize + cellSize / 2;
         const centerY = candidateRow * cellSize + cellSize / 2;
         const dx = x - centerX;
@@ -292,22 +293,22 @@ export default function Game() {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
-        // Save user route only if it matches default (checked in getEffectiveRoute)
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
         if (word === hintedWord) setHintedWord("");
+        // Update score: add +100 for a correct submission
+        setScore(prev => prev + 100);
+        if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
       }
     } else {
-      console.log("Word not in game.valid_words => FAIL or dictionary check");
+      console.log("Word not in game.valid_words => FAIL");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      if (await isValidEnglish(word)) {
-        if (!hintWordsUsed.includes(word)) {
-          console.log("Incrementing hintCounter because it's a valid English word and not counted before");
-          setHintCounter(prev => prev + 1);
-          setHintWordsUsed(prev => [...prev, word]);
-        } else {
-          console.log("Word already used for hint; not incrementing hintCounter");
-        }
+      // Update score: subtract 10 for a wrong submission
+      setScore(prev => prev - 10);
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
       }
     }
     console.log("foundWords after submission:", nextFoundWords);
@@ -351,35 +352,41 @@ export default function Game() {
   });
   console.log("Final foundWordLines array =>", foundWordLines);
 
+  // Live score now displays the numeric score.
   const generateEmojiScore = () => {
     return attemptSequence
       .map(attempt => {
         if (attempt === "FAIL") return failEmoji;
-        return attempt === game?.spangram ? spangramEmoji : correctEmoji;
+        return game.valid_words.includes(attempt) 
+          ? (attempt === game?.spangram ? spangramEmoji : correctEmoji)
+          : attempt;
       })
       .join("");
   };
 
+  // New Hint mechanism: Always available.
+  // Subtract 50 from the score only if the new hint is different from the current one.
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
     if (unsolved.length === 0) return;
+    let newHint;
     if (unsolved.length > 1 && unsolved.includes(game.spangram)) {
       const nonSpangram = unsolved.filter(word => word !== game.spangram);
-      if (nonSpangram.length > 0) {
-        setHintedWord(nonSpangram[0]);
-      } else {
-        setHintedWord(game.spangram);
-      }
+      newHint = nonSpangram.length > 0 ? nonSpangram[0] : game.spangram;
     } else {
-      setHintedWord(unsolved[0]);
+      newHint = unsolved[0];
     }
-    setHintCounter(0);
+    // Only subtract score if new hint is different
+    if (newHint !== hintedWord) {
+      setScore(prev => prev - 50);
+      setAttemptSequence(prev => [...prev, "💡"]);
+    }
+    setHintedWord(newHint);
   };
 
   const handleShareScore = () => {
-    const emojiScore = generateEmojiScore();
-    const shareText = `Eid Milan Game #1\nScore: ${emojiScore}\nwww.eidmilan.com`;
+    const shareText = `Eid Milan Game #1\nScore: ${score}\nwww.eidmilan.com`;
     if (navigator.share) {
       navigator.share({ title: "Eid Milan Game", text: shareText })
         .catch(error => console.error("Error sharing:", error));
@@ -391,11 +398,10 @@ export default function Game() {
 
   const submitScore = () => {
     if (!playerName.trim()) return;
-    const emojiScore = generateEmojiScore();
-    axios.post("/api/submit-score", { name: playerName, score: emojiScore })
+    axios.post("/api/submit-score", { name: playerName, score })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false); // Do not reset the puzzle; keep final state for screenshots.
+        setShowPopup(false);
       })
       .catch(error => console.error("Error submitting score:", error));
   };
@@ -410,6 +416,7 @@ export default function Game() {
     setHintedWord("");
     setPuzzleComplete(false);
     setFoundRoutes({});
+    setScore(0);
     fetchGameData();
   };
 
@@ -419,7 +426,7 @@ export default function Game() {
     ? (foundWords.length / game.valid_words.length) * 100
     : 0;
 
-  const hintButtonText = hintCounter < 2 ? `HINT (${2 - hintCounter})` : "HINT";
+  const hintButtonText = "HINT"; // Always available now
 
   const svgWidth = game.letter_grid[0].length * cellSize;
   const svgHeight = game.letter_grid.length * cellSize;
@@ -446,7 +453,7 @@ export default function Game() {
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
-              <li>💡 Submit two valid English words (4+ letters) to unlock the <strong>HINT</strong> button.</li>
+              <li>💡 Tap <strong>HINT</strong> to get a hint (each hint deducts 50 points).</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>
               <li>🏆 Solve them all and submit your score to the raffleboard!</li>
             </ul>
@@ -540,19 +547,14 @@ export default function Game() {
 
       <div className="action-buttons">
         <button onClick={clearSelection} className="clear-button">CLEAR</button>
-        <button onClick={handleHint} className="hint-button" disabled={hintCounter < 2}>
-          {hintButtonText}
-        </button>
+        <button onClick={handleHint} className="hint-button">{hintButtonText}</button>
         <button onClick={submitWord} className="submit-button" disabled={puzzleComplete}>
           SUBMIT
         </button>
       </div>
 
       <div className="live-score">
-        {attemptSequence.map(attempt => {
-          if (attempt === "FAIL") return "⚫";
-          return attempt === game?.spangram ? "🟡" : "🟢";
-        }).join("")}
+        Score: {score}
       </div>
 
       {showPopup && (
@@ -571,7 +573,7 @@ export default function Game() {
         </div>
       )}
 
-      <div className="leaderboard">
+      <div className="leaderboard" style={{ width: svgWidth }}>
         <h2 className="leaderboard-title">RAFFLEBOARD</h2>
         <table>
           <thead>
@@ -744,10 +746,6 @@ export default function Game() {
           background-color: #2196F3;
           color: #fff;
         }
-        .hint-button:disabled {
-          background-color: #90CAF9;
-          color: #fff;
-        }
         .live-score {
           font-size: 1.5rem;
           font-weight: 600;
@@ -789,6 +787,18 @@ export default function Game() {
           border-top: 1px solid #ccc;
           padding-top: 10px;
           font-family: inherit;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        /* Constrain leaderboard table to container width and wrap text */
+        .leaderboard table {
+          width: 100%;
+          table-layout: fixed;
+          word-wrap: break-word;
+        }
+        .leaderboard th,
+        .leaderboard td {
+          overflow-wrap: break-word;
         }
         .leaderboard-title {
           text-transform: uppercase;
@@ -865,8 +875,7 @@ export default function Game() {
             background-color: #1976D2;
             color: #fff;
           }
-          .hint-button:disabled {
-            background-color: #90CAF9;
+          .live-score {
             color: #fff;
           }
           .popup {
