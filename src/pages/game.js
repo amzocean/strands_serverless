@@ -455,7 +455,7 @@ export default function Game() {
         <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
         <li>❌ Tap <strong>CLEAR</strong> to reset your selection.</li>        
         <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-        <li>💰 Scoring: +100 per correct word, -10 per wrong submission, -50 per new hint.</li>
+        <li>💰 <strong>Scoring:</strong> +100 per correct word, -10 per wrong submission, -50 per new hint.</li>
         <li>🏆 Solve them all and submit your score to the raffleboard!</li>        
       </ul>
       <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
