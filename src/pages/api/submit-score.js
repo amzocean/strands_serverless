@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     try {
       // Check current leaderboard count
       const snapshot = await db.collection("leaderboard").get();
-      if (snapshot.size >= 50) {
+      if (snapshot.size >= 500) {
         return res.status(400).json({ error: "Leaderboard is full" });
       }
       // Add new entry
