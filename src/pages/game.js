@@ -15,6 +15,8 @@ export default function Game() {
   const [hintCounter, setHintCounter] = useState(0);
   const [hintWordsUsed, setHintWordsUsed] = useState([]);
   const [showPopup, setShowPopup] = useState(false);
+  // NEW: Added thank you message state
+  const [showThankYou, setShowThankYou] = useState(false);
   // Show tutorial on page load.
   const [showTutorial, setShowTutorial] = useState(true);
   const [colorMapping, setColorMapping] = useState({});
@@ -452,7 +454,8 @@ export default function Game() {
     axios.post("/api/submit-score", { name: playerName, score: score })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false); // Keep final state for screenshots.
+        setShowPopup(false);
+        setShowThankYou(true); // Show thank you message popup after score submission.
         setIsSubmittingScore(false);
       })
       .catch(error => {
@@ -633,6 +636,18 @@ export default function Game() {
           />
           <button onClick={submitScore} className="submit-button" disabled={isSubmittingScore}>Submit Score</button>
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
+        </div>
+      )}
+
+      {/* Thank you message popup displayed after score submission */}
+      {showThankYou && (
+        <div className="popup">
+          <p>Thank you for submitting your score!</p>
+          <p>
+            To be eligible for a raffle ticket, make sure to complete signing up for Eid Milan at{" "}
+            <a href="https://www.eidmilan.com" target="_blank" rel="noopener noreferrer">www.eidmilan.com</a>
+          </p>
+          <button onClick={() => setShowThankYou(false)} className="submit-button">Close</button>
         </div>
       )}
 
@@ -836,6 +851,8 @@ export default function Game() {
           color: #000;
           font-family: inherit;
           z-index: 10000;
+          width: 90%;
+          max-width: 400px;
         }
         .popup input {
           padding: 10px;
