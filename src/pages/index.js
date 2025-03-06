@@ -122,8 +122,8 @@ const styles = {
   },
   // Reduced width/height to ensure Instagram icon matches WhatsApp icon size
   socialIcon: {
-    width: '40px',
-    height: '40px',
+    width: '39px',
+    height: '39px',
     marginBottom: '20px',
   },
   // Reduced width/height to ensure Instagram icon matches WhatsApp icon size
