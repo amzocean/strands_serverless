@@ -26,9 +26,9 @@ export default function Game() {
   const [score, setScore] = useState(0);
 
   // Scoring rules:
-  // +100 for correct, -10 for wrong (only if word length >= 4), -50 for hint usage (only when new hint)
-  // (Hint: if the requested hint is the same as the currently shown one, ignore.)
-  
+  // +100 for correct, -10 for wrong, -50 for hint usage
+  // +200 for spangram (instead of +100)
+
   // Emoji variables (left for legacy display if needed)
   const spangramEmoji = "🟡";
   const correctEmoji = "🟢";
@@ -278,6 +278,13 @@ export default function Game() {
       console.log(`No valid route for "${word}" => no lines drawn`);
       return null;
     }
+
+    // If it's the spangram, highlight more strongly
+    const isSpangram = (word === game.spangram);
+    const strokeColor = isSpangram ? "red" : "red";
+    const strokeW = isSpangram ? 5 : 3;
+    const strokeOp = isSpangram ? 0.6 : 0.3;
+
     const lines = [];
     for (let i = 0; i < route.length - 1; i++) {
       let r1, c1, r2, c2;
@@ -300,9 +307,9 @@ export default function Game() {
           y1={ty1}
           x2={tx2}
           y2={ty2}
-          stroke="red"
-          strokeWidth="3"
-          strokeOpacity="0.3"
+          stroke={strokeColor}
+          strokeWidth={strokeW}
+          strokeOpacity={strokeOp}
           strokeLinecap="round"
         />
       );
@@ -326,6 +333,7 @@ export default function Game() {
     let nextAttemptSequence = [...attemptSequence];
     let newScore = score;
     const routeToSave = [...selectedLetters]; // Capture user-selected route
+
     if (game.valid_words.includes(word)) {
       console.log("Word is correct");
       if (!foundWords.includes(word)) {
@@ -333,8 +341,17 @@ export default function Game() {
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
+
+        // If user had a hint displayed and that hint is now solved, remove the hint
         if (word === hintedWord) setHintedWord("");
-        newScore += 100;
+
+        // If it's the spangram, +200, else +100
+        if (word === game.spangram) {
+          newScore += 200;
+        } else {
+          newScore += 100;
+        }
+
         if (navigator.vibrate) {
           navigator.vibrate(100);
         }
@@ -343,7 +360,7 @@ export default function Game() {
       console.log("Word is incorrect");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      newScore -= 10;
+      newScore -= 10; // only if length >= 4
       if (navigator.vibrate) {
         navigator.vibrate(200);
       }
@@ -353,6 +370,7 @@ export default function Game() {
     setFoundWords(nextFoundWords);
     setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
+
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
@@ -382,7 +400,7 @@ export default function Game() {
           : coord[0] === row && coord[1] === col
       );
       if (found) {
-        return colorMapping[word] || undefined;
+        return (word === game.spangram) ? "gold" : colorMapping[word] || undefined;
       }
     }
     return undefined;
@@ -400,7 +418,7 @@ export default function Game() {
   };
 
   // Hint mechanism: always available.
-  // When user taps HINT, if the new hint is different from the current one, subtract 50 points and add a "💡" symbol to the score.
+  // Subtract 50 points only if new hint is different from current.
   const handleHint = () => {
     if (!game) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
@@ -489,9 +507,12 @@ export default function Game() {
               <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
+              {/* NEW: spangram bullet */}
+              <li>🌟 Find the <strong>Spangram</strong>! Spanagram describes the puzzle's theme and touches two opposite sides of the grid.It may be two words.</li>
+
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
               <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-              <li>💯 <strong>SCORING</strong>+100 for a successful submit. -10 for a wrong submission. -50 for using a HINT.</li>
+              <li>💯 <strong>SCORING</strong> +100 for normal words, +200 for the spangram, -10 for wrong submissions, and -50 per new hint.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection or backtrack your swipe.</li>
               <li>🏆 Solve them all and submit your score to the raffleboard!</li>
             </ul>
@@ -595,7 +616,7 @@ export default function Game() {
       </div>
 
       <div className="live-score">
-        Score: {displayScore()}
+        Score: {score}
       </div>
 
       {showPopup && (
