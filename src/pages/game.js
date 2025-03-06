@@ -24,6 +24,8 @@ export default function Game() {
   const [isSwiping, setIsSwiping] = useState(false);
   // Use numerical scoring
   const [score, setScore] = useState(0);
+  // NEW: Prevent duplicate submission of score
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
 
   // Scoring rules:
   // +100 for correct, -10 for wrong, -50 for hint usage
@@ -341,17 +343,12 @@ export default function Game() {
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
-
-        // If user had a hint displayed and that hint is now solved, remove the hint
         if (word === hintedWord) setHintedWord("");
-
-        // If it's the spangram, +200, else +100
         if (word === game.spangram) {
           newScore += 200;
         } else {
           newScore += 100;
         }
-
         if (navigator.vibrate) {
           navigator.vibrate(100);
         }
@@ -360,7 +357,7 @@ export default function Game() {
       console.log("Word is incorrect");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      newScore -= 10; // only if length >= 4
+      newScore -= 10;
       if (navigator.vibrate) {
         navigator.vibrate(200);
       }
@@ -370,7 +367,6 @@ export default function Game() {
     setFoundWords(nextFoundWords);
     setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
-
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
@@ -448,15 +444,21 @@ export default function Game() {
     }
   };
 
+  // Prevent duplicate submission of score
   const submitScore = () => {
-    if (!playerName.trim()) return;
+    if (!playerName.trim() || isSubmittingScore) return;
+    setIsSubmittingScore(true);
     const shareText = `Eid Milan Game #1\nScore: ${score}\nwww.eidmilan.com`;
     axios.post("/api/submit-score", { name: playerName, score: score })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
         setShowPopup(false); // Keep final state for screenshots.
+        setIsSubmittingScore(false);
       })
-      .catch(error => console.error("Error submitting score:", error));
+      .catch(error => {
+        console.error("Error submitting score:", error);
+        setIsSubmittingScore(false);
+      });
   };
 
   const resetGame = () => {
@@ -507,12 +509,11 @@ export default function Game() {
               <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-              {/* NEW: spangram bullet */}
-              <li>🌟 Find the <strong>Spangram</strong>! Spanagram describes the puzzle's theme and touches two opposite sides of the grid.It may be two words.</li>
-
+              {/* NEW: Spangram tutorial bullet */}
+              <li>🌟 Find the <strong>Spangram</strong>: a special word (or two-word phrase) that spans the board. Solving it gives you extra points (+200) and a brighter highlight!</li>
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
               <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-              <li>💯 <strong>SCORING</strong> +100 for normal words, +200 for the spangram, -10 for wrong submissions, and -50 per new hint.</li>
+              <li>💯 <strong>SCORING</strong>: +100 for normal words, +200 for the spangram, -10 for wrong submissions, and -50 per new hint.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection or backtrack your swipe.</li>
               <li>🏆 Solve them all and submit your score to the raffleboard!</li>
             </ul>
@@ -616,7 +617,7 @@ export default function Game() {
       </div>
 
       <div className="live-score">
-        Score: {score}
+        Score: {displayScore()}
       </div>
 
       {showPopup && (
@@ -630,7 +631,7 @@ export default function Game() {
             placeholder="Your name"
             className="name-input"
           />
-          <button onClick={submitScore} className="submit-button">Submit Score</button>
+          <button onClick={submitScore} className="submit-button" disabled={isSubmittingScore}>Submit Score</button>
           <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
         </div>
       )}
