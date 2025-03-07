@@ -1,5 +1,5 @@
 const gameData = {
-    gameId: "game-2025-03-06-YUMMY6",
+    gameId: "game-2025-03-06-YUMMY10",
     theme: "YUMMY",
     letter_grid: [
       [
