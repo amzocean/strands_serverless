@@ -5,7 +5,7 @@ export default function Home() {
     <div style={styles.container}>
       {/* Header Image */}
       <img 
-        src="/header.jpg"  // Ensure this image is in public/ directory
+        src="/header.jpg"  
         alt="Eid Milan 1446H"
         style={styles.headerImage}
       />
@@ -15,6 +15,7 @@ export default function Home() {
         <a 
           href="https://forms.gle/ygCP2sjcj4T71Yvn9" 
           style={styles.link} 
+          className="animated-button"
           target="_blank" 
           rel="noopener noreferrer"
         >
@@ -24,6 +25,7 @@ export default function Home() {
         <a 
           href="https://docs.google.com/forms/d/e/1FAIpQLSchi1k4GpPBmw7uQuxnFXbxBfQWE_QtM8qR_dn3wVhkwDvQ7Q/viewform?usp=header" 
           style={styles.link} 
+          className="animated-button"
           target="_blank" 
           rel="noopener noreferrer"
         >
@@ -46,7 +48,6 @@ export default function Home() {
 
       {/* Social Icons */}
       <div style={styles.socialIconsWrapper}>
-        {/* WhatsApp icon on the left */}
         <a 
           href="https://chat.whatsapp.com/CuEcC2Rc21yAbXGeUZc3Sc" 
           target="_blank" 
@@ -59,7 +60,6 @@ export default function Home() {
           />
         </a>
 
-        {/* Instagram icon on the right (made smaller to match WhatsApp size) */}
         <a 
           href="https://www.instagram.com/eidmilanseattle/" 
           target="_blank" 
@@ -72,6 +72,17 @@ export default function Home() {
           />
         </a>
       </div>
+
+      <style jsx>{`
+        .animated-button {
+          animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -88,8 +99,8 @@ const styles = {
     alignItems: 'center'
   },
   headerImage: {
-    width: '100%', // Ensure it scales properly
-    maxWidth: '900px', // Prevents it from being too large on desktop
+    width: '100%', 
+    maxWidth: '900px', 
     display: 'block',
   },
   linkWrapper: {
@@ -97,8 +108,8 @@ const styles = {
     flexDirection: 'column',
     gap: '15px',
     marginTop: '20px',
-    width: '90%', // Makes it responsive for all screens
-    maxWidth: '320px' // Ensures it doesn't stretch too wide on desktop
+    width: '90%', 
+    maxWidth: '320px'
   },
   link: {
     padding: '15px',
@@ -120,13 +131,11 @@ const styles = {
     justifyContent: 'center',
     gap: '15px'
   },
-  // Reduced width/height to ensure Instagram icon matches WhatsApp icon size
   socialIcon: {
     width: '39px',
     height: '39px',
     marginBottom: '20px',
   },
-  // Reduced width/height to ensure Instagram icon matches WhatsApp icon size
   socialIconInsta: {
     width: '39px',
     height: '39px',
