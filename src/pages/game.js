@@ -18,7 +18,7 @@ export default function Game() {
   // NEW: Added thank you message state
   const [showThankYou, setShowThankYou] = useState(false);
   // Show tutorial on page load.
-  const [showTutorial, setShowTutorial] = useState(true);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
