@@ -14,7 +14,7 @@ export default function Game() {
   const [hintedWord, setHintedWord] = useState("");
   const [hintCounter, setHintCounter] = useState(0);
   const [hintWordsUsed, setHintWordsUsed] = useState([]);
-  // Removed the manual score-submission popup state (showPopup)
+  // Removed manual score-submission popup state.
   // NEW: Added thank you message state
   const [showThankYou, setShowThankYou] = useState(false);
   // NEW: Added name prompt popup state
@@ -308,13 +308,11 @@ export default function Game() {
       console.log(`No valid route for "${word}" => no lines drawn`);
       return null;
     }
-
     // If it's the spangram, highlight more strongly
     const isSpangram = (word === game.spangram);
     const strokeColor = isSpangram ? "red" : "red";
     const strokeW = isSpangram ? 5 : 3;
     const strokeOp = isSpangram ? 0.6 : 0.3;
-
     const lines = [];
     for (let i = 0; i < route.length - 1; i++) {
       let r1, c1, r2, c2;
@@ -348,6 +346,7 @@ export default function Game() {
     return lines;
   }
 
+  // UPDATED: In submitWord we now pass the computed newScore to submitScore.
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
     const word = selectedLetters.map(l => l.letter).join("");
@@ -363,7 +362,6 @@ export default function Game() {
     let nextAttemptSequence = [...attemptSequence];
     let newScore = score;
     const routeToSave = [...selectedLetters]; // Capture user-selected route
-
     if (game.valid_words.includes(word)) {
       console.log("Word is correct");
       if (!foundWords.includes(word)) {
@@ -395,7 +393,6 @@ export default function Game() {
     setFoundWords(nextFoundWords);
     setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
-    // Update in-progress state in local storage
     localStorage.setItem("inProgressState", JSON.stringify({
       foundWords: nextFoundWords,
       score: newScore,
@@ -410,9 +407,28 @@ export default function Game() {
         foundWords: nextFoundWords,
         score: newScore
       }));
-      // AUTO-SUBMIT SCORE since we already asked for the player's name on page load.
-      submitScore();
+      // Pass the newScore so the final submission includes the last word’s points.
+      submitScore(newScore);
     }
+  };
+
+  // UPDATED: submitScore now accepts an optional finalScore parameter.
+  const submitScore = (finalScore) => {
+    const scoreToSubmit = finalScore !== undefined ? finalScore : score;
+    if (!playerName.trim() || isSubmittingScore) return;
+    setIsSubmittingScore(true);
+    const shareText = `Eid Milan Game #1\nScore: ${scoreToSubmit}\nwww.eidmilan.com`;
+    axios.post("/api/submit-score", { name: playerName, score: scoreToSubmit })
+      .then(response => {
+        setLeaderboard(response.data.leaderboard);
+        setIsSubmittingScore(false);
+        // Show the final thank-you popup with a custom message.
+        setShowThankYou(true);
+      })
+      .catch(error => {
+        console.error("Error submitting score:", error);
+        setIsSubmittingScore(false);
+      });
   };
 
   const clearSelection = () => {
@@ -481,21 +497,13 @@ export default function Game() {
   };
 
   // AUTO-SUBMIT SCORE using the stored player name.
-  const submitScore = () => {
-    if (!playerName.trim() || isSubmittingScore) return;
-    setIsSubmittingScore(true);
-    const shareText = `Eid Milan Game #1\nScore: ${score}\nwww.eidmilan.com`;
-    axios.post("/api/submit-score", { name: playerName, score: score })
-      .then(response => {
-        setLeaderboard(response.data.leaderboard);
-        setIsSubmittingScore(false);
-        // Show the final thank-you popup with a custom message.
-        setShowThankYou(true);
-      })
-      .catch(error => {
-        console.error("Error submitting score:", error);
-        setIsSubmittingScore(false);
-      });
+  // (submitScore now gets called from submitWord with the final computed score.)
+  // NEW: Handler for saving the player's name from the initial name prompt.
+  const handleNameSubmit = () => {
+    if (!playerName.trim()) return;
+    const gameId = localStorage.getItem("gameId");
+    localStorage.setItem(`playerName_${gameId}`, playerName);
+    setShowNamePrompt(false);
   };
 
   const resetGame = () => {
@@ -512,14 +520,6 @@ export default function Game() {
     setPuzzleComplete(false);
     setFoundRoutes({});
     fetchGameData();
-  };
-
-  // NEW: Handler for saving the player's name from the initial name prompt.
-  const handleNameSubmit = () => {
-    if (!playerName.trim()) return;
-    const gameId = localStorage.getItem("gameId");
-    localStorage.setItem(`playerName_${gameId}`, playerName);
-    setShowNamePrompt(false);
   };
 
   if (!game) return <p>Loading...</p>;
