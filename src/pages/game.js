@@ -14,12 +14,15 @@ export default function Game() {
   const [hintedWord, setHintedWord] = useState("");
   const [hintCounter, setHintCounter] = useState(0);
   const [hintWordsUsed, setHintWordsUsed] = useState([]);
-  const [showPopup, setShowPopup] = useState(false);
+  // Removed the manual score-submission popup state (showPopup)
   // NEW: Added thank you message state
   const [showThankYou, setShowThankYou] = useState(false);
+  // NEW: Added name prompt popup state
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
   // Show tutorial on page load.
   const [showTutorial, setShowTutorial] = useState(false);
   const [colorMapping, setColorMapping] = useState({});
+  // playerName now is taken at the very beginning (from name prompt)
   const [playerName, setPlayerName] = useState("");
   const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
@@ -57,7 +60,7 @@ export default function Game() {
     setShowTutorial(!showTutorial);
   };
 
-  // On initial load, check localStorage for completed game state
+  // On initial load, fetch game data, leaderboard, and load any saved state.
   useEffect(() => {
     fetchGameData();
     fetchLeaderboard();
@@ -71,8 +74,30 @@ export default function Game() {
         setScore(state.score || 0);
         setPuzzleComplete(true);
       }
+    } else {
+      const progressString = localStorage.getItem("inProgressState");
+      if (progressString) {
+        const state = JSON.parse(progressString);
+        setFoundWords(state.foundWords || []);
+        setScore(state.score || 0);
+        setAttemptSequence(state.attemptSequence || []);
+        setHintedWord(state.hintedWord || "");
+      }
     }
   }, []);
+
+  // NEW: After game is loaded, check for player name tied to this game id.
+  useEffect(() => {
+    if (game) {
+      const gameId = localStorage.getItem("gameId");
+      const storedName = localStorage.getItem(`playerName_${gameId}`);
+      if (storedName) {
+        setPlayerName(storedName);
+      } else {
+        setShowNamePrompt(true);
+      }
+    }
+  }, [game]);
 
   const fetchGameData = () => {
     axios.get("/api/game")
@@ -85,6 +110,7 @@ export default function Game() {
           // New game available; clear any previous completed state.
           localStorage.removeItem("gameCompleted");
           localStorage.removeItem("completedState");
+          localStorage.removeItem("inProgressState");
         }
         localStorage.setItem("gameId", newGameId);
         setGame(response.data);
@@ -369,6 +395,13 @@ export default function Game() {
     setFoundWords(nextFoundWords);
     setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
+    // Update in-progress state in local storage
+    localStorage.setItem("inProgressState", JSON.stringify({
+      foundWords: nextFoundWords,
+      score: newScore,
+      attemptSequence: nextAttemptSequence,
+      hintedWord
+    }));
     if (nextFoundWords.length === game.valid_words.length) {
       console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
@@ -377,7 +410,8 @@ export default function Game() {
         foundWords: nextFoundWords,
         score: newScore
       }));
-      setTimeout(() => setShowPopup(true), 500);
+      // AUTO-SUBMIT SCORE since we already asked for the player's name on page load.
+      submitScore();
     }
   };
 
@@ -446,7 +480,7 @@ export default function Game() {
     }
   };
 
-  // Prevent duplicate submission of score
+  // AUTO-SUBMIT SCORE using the stored player name.
   const submitScore = () => {
     if (!playerName.trim() || isSubmittingScore) return;
     setIsSubmittingScore(true);
@@ -454,9 +488,9 @@ export default function Game() {
     axios.post("/api/submit-score", { name: playerName, score: score })
       .then(response => {
         setLeaderboard(response.data.leaderboard);
-        setShowPopup(false);
-        setShowThankYou(true); // Show thank you message popup after score submission.
         setIsSubmittingScore(false);
+        // Show the final thank-you popup with a custom message.
+        setShowThankYou(true);
       })
       .catch(error => {
         console.error("Error submitting score:", error);
@@ -465,8 +499,10 @@ export default function Game() {
   };
 
   const resetGame = () => {
-    setShowPopup(false);
-    setPlayerName("");
+    // Remove saved progress from local storage.
+    localStorage.removeItem("gameCompleted");
+    localStorage.removeItem("completedState");
+    localStorage.removeItem("inProgressState");
     setFoundWords([]);
     setSelectedLetters([]);
     setScore(0);
@@ -475,9 +511,15 @@ export default function Game() {
     setHintedWord("");
     setPuzzleComplete(false);
     setFoundRoutes({});
-    localStorage.removeItem("gameCompleted");
-    localStorage.removeItem("completedState");
     fetchGameData();
+  };
+
+  // NEW: Handler for saving the player's name from the initial name prompt.
+  const handleNameSubmit = () => {
+    if (!playerName.trim()) return;
+    const gameId = localStorage.getItem("gameId");
+    localStorage.setItem(`playerName_${gameId}`, playerName);
+    setShowNamePrompt(false);
   };
 
   if (!game) return <p>Loading...</p>;
@@ -512,13 +554,12 @@ export default function Game() {
               <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-              {/* NEW: Spangram tutorial bullet */}
               <li>🌟 Find the <strong>Spangram</strong>: a special word (or two-word phrase) that spans the board. Solving it gives you extra points (+200) and a brighter highlight!</li>
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
               <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
               <li>💯 <strong>SCORING</strong>: +100 for normal words, +200 for the spangram, -10 for wrong submissions, and -50 per new hint.</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection or backtrack your swipe.</li>
-              <li>🏆 Solve them all and submit your score to the raffleboard!</li>
+              <li>🏆 Solve them all and your score will automatically be submitted to the RAFFLEBOARD!</li>
             </ul>
             <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
           </div>
@@ -623,10 +664,10 @@ export default function Game() {
         Score: {displayScore()}
       </div>
 
-      {showPopup && (
+      {/* NEW: Name prompt popup on initial page load */}
+      {showNamePrompt && (
         <div className="popup">
-          <p>🎉 Puzzle Completed! 🎉</p>
-          <p>Please enter your name to submit your score:</p>
+          <p>Please enter your name to play the game:</p>
           <input
             type="text"
             value={playerName}
@@ -634,18 +675,17 @@ export default function Game() {
             placeholder="Your name"
             className="name-input"
           />
-          <button onClick={submitScore} className="submit-button" disabled={isSubmittingScore}>Submit Score</button>
-          <button onClick={handleShareScore} className="share-button">📤 Share Score</button>
+          <button onClick={handleNameSubmit} className="submit-button">Save</button>
         </div>
       )}
 
-      {/* Thank you message popup displayed after score submission */}
+      {/* NEW: Final thank-you popup after auto-submission */}
       {showThankYou && (
         <div className="popup">
-          <p>Thank you for submitting your score!</p>
+          <p>Thank you {playerName}. Your score was submitted to the RAFFLEBOARD!</p>
           <p>
-            To be eligible for a raffle ticket, make sure to complete signing up for Eid Milan at{" "}
-            <a href="https://www.eidmilan.com" target="_blank" rel="noopener noreferrer">www.eidmilan.com</a>
+            Make sure to sign up for Eid Milan to be eligible for a raffle prize. Sign up at{" "}
+            <a href="https://www.eidmilan.com" target="_blank" rel="noopener noreferrer">eidmilan.com</a>
           </p>
           <button onClick={() => setShowThankYou(false)} className="submit-button">Close</button>
         </div>
