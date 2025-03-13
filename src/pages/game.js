@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
 // Define summary text as a constant for easy changes.
-const summaryText = "Total 7 words - 4 LD | 3 EN";
+const summaryText = "Total 9 words - 8 LD | 1 EN";
 
 export default function Game() {
   const [game, setGame] = useState(null);
