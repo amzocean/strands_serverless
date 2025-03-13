@@ -2,8 +2,8 @@
 import sys, random, concurrent.futures, json, re
 
 # ------------------ Configuration ------------------
-GRID_WIDTH = 5
-GRID_HEIGHT = 7
+GRID_WIDTH = 6
+GRID_HEIGHT = 9
 TOTAL_CELLS = GRID_WIDTH * GRID_HEIGHT  # 42
 
 # Provided words & spangram.
@@ -11,8 +11,8 @@ TOTAL_CELLS = GRID_WIDTH * GRID_HEIGHT  # 42
 #   LION (4) + TIGER (5) + BEAR (4) + ZEBRA (5) + EAGLE (5) +
 #   SHARK (5) + WHALE (5) + FROG (4) + TOAD (4)
 #   plus spangram ANIMALS (7) = 48 letters.
-wordsList = ["SIHORI", "IFTAAR", "ROZA", "QURAN", "KHAJOOR"]
-spangram = "RAMADAN"  # 7 letters
+wordsList = ["THANDU", "GARAM", "NARAM", "KARAK", "UPAR", "NEECHE", "UJAALU", "ANDHAARU"]
+spangram = "OPPOSITES"  # 7 letters
 
 # Verify total letters
 if sum(len(w) for w in wordsList) + len(spangram) != TOTAL_CELLS:
@@ -166,7 +166,7 @@ def attempt_random_order():
     return solve_puzzle_with_order(ordering)
 
 def main():
-    attempts = 50  # number of parallel attempts
+    attempts = 500  # number of parallel attempts
     with concurrent.futures.ProcessPoolExecutor() as executor:
         futures = [executor.submit(attempt_random_order) for _ in range(attempts)]
         for future in concurrent.futures.as_completed(futures):
