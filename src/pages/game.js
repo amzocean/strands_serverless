@@ -154,12 +154,17 @@ export default function Game() {
     return setA.every((val, index) => val === setB[index]);
   }
 
-  // Decide which route to use for a given word
+  // CHANGED HERE: Always prefer the user’s route if it exists,
+  // rather than checking if it's the same as the default route.
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
     const userRoute = foundRoutes[word];
-    return userRoute && isSameRoute(userRoute, defaultRoute) ? userRoute : defaultRoute;
+    // If we have a user route for this word, use it; otherwise, use the default route.
+    if (userRoute) {
+      return userRoute;
+    }
+    return defaultRoute;
   }
 
   // Tap-based letter selection
