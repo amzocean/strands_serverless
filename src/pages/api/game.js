@@ -1,6 +1,6 @@
     const gameData = {
-      gameId: "game-2025-03-06-OPPOSITES1",
-      theme: "Activity Time",
+      gameId: "game-2025-03-06-OPPOSITES2",
+      theme: "Bayaan Activity",
       letter_grid: [
         [
           "A",
