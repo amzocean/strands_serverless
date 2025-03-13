@@ -73,6 +73,7 @@ export default function Home() {
         </a>
       </div>
 
+      {/* Keyframe for pulse animation */}
       <style jsx>{`
         .animated-button {
           animation: pulse 2s infinite;
@@ -99,20 +100,23 @@ const styles = {
     alignItems: 'center'
   },
   headerImage: {
-    width: '100%', 
-    maxWidth: '900px', 
+    width: '100%',
+    maxWidth: '900px',
     display: 'block',
   },
   linkWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '15px',
-    marginTop: '20px',
-    width: '90%', 
-    maxWidth: '320px'
+    // Increase vertical spacing between buttons
+    gap: '25px',
+    // Add more margin to space the section out vertically
+    marginTop: '40px',
+    marginBottom: '40px',
+    width: '90%',
+    maxWidth: '360px'
   },
   link: {
-    padding: '15px',
+    padding: '18px 20px',
     background: '#4B67B0',
     borderRadius: '10px',
     textDecoration: 'none',
@@ -140,5 +144,5 @@ const styles = {
     width: '39px',
     height: '39px',
     marginBottom: '20px',
-  }  
+  }
 };
