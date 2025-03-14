@@ -159,11 +159,11 @@ export default function Game() {
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
-    const userRoute = foundRoutes[word];
+    //const userRoute = foundRoutes[word];
     // If we have a user route for this word, use it; otherwise, use the default route.
-    if (userRoute) {
-      return userRoute;
-    }
+    //if (userRoute) {
+      //return userRoute;
+    //}
     return defaultRoute;
   }
 
