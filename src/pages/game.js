@@ -7,6 +7,7 @@ export default function Game() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -27,7 +28,7 @@ export default function Game() {
     return () => darkMq.removeEventListener('change', handler);
   }, []);
 
-  // Poll for submissions every 5 seconds
+  // Poll for submissions every 5 seconds (if needed elsewhere)
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
@@ -67,8 +68,10 @@ export default function Game() {
       });
       const data = await res.json();
       if (data.success) {
+        // Clear the form and mark submission as complete
         setName('');
         setAnswer('');
+        setHasSubmitted(true);
         setSubmissions(data.submissions || []);
       } else {
         setError(data.error || 'Submission failed. Try again.');
@@ -79,15 +82,6 @@ export default function Game() {
     }
     setLoading(false);
   };
-
-  // Build frequency map of answers (ignoring names)
-  const wordFrequencies = submissions.reduce((acc, curr) => {
-    const ans = curr.answer.trim().toLowerCase();
-    if (ans) {
-      acc[ans] = (acc[ans] || 0) + 1;
-    }
-    return acc;
-  }, {});
 
   return (
     <div style={{
@@ -110,7 +104,7 @@ export default function Game() {
           </p>
         </div>
 
-        {/* Puzzle Container (Form & Word Cloud) */}
+        {/* Puzzle Container (Form and post-submission message) */}
         <div style={{ ...styles.puzzleContainer, ...(isDark ? { background: '#1e1e1e' } : {}) }}>
           {/* Submission Form */}
           <form onSubmit={handleSubmit} style={styles.form}>
@@ -151,31 +145,16 @@ export default function Game() {
             {error && <p style={styles.error}>{error}</p>}
           </form>
 
-          {/* Live Word Cloud */}
-          <div style={styles.wordCloudContainer}>
-            <h3>Live Word Cloud</h3>
-            <div style={{
-              ...styles.wordCloud,
-              padding: isMobile ? '5px' : '10px',
-              ...(isDark ? { background: '#333', border: '1px solid #555' } : {})
-            }}>
-              {Object.keys(wordFrequencies).length === 0 ? (
-                <p>No submissions yet.</p>
-              ) : (
-                Object.entries(wordFrequencies).map(([word, count]) => (
-                  <span
-                    key={word}
-                    style={{
-                      ...styles.word,
-                      fontSize: `${Math.min(20 + count * 5, 50)}px`
-                    }}
-                  >
-                    {word}
-                  </span>
-                ))
-              )}
+          {/* Post-Submission Message */}
+          {hasSubmitted && (
+            <div style={styles.thankYouMessage}>
+              <p>
+                Thanks for submitting your guess for Eid Milan venue.<br />
+                You can see the current answers at{' '}
+                <a href="/wordcloud" style={styles.link}>www.eidmilan.com/wordcloud</a>.
+              </p>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -250,20 +229,13 @@ const styles = {
     color: 'red',
     marginTop: '-10px',
   },
-  wordCloudContainer: {
+  thankYouMessage: {
     marginTop: '20px',
+    fontSize: '1.1rem',
+    lineHeight: '1.4',
   },
-  wordCloud: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: '10px',
-    border: '1px solid #ccc',
-    borderRadius: '10px',
-    minHeight: '100px',
-    background: '#f9f9f9',
-  },
-  word: {
-    padding: '5px',
+  link: {
+    color: '#4B67B0',
+    textDecoration: 'underline',
   },
 };
