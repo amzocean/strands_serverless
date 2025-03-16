@@ -3,6 +3,8 @@ import WordCloudCanvas from '../components/WordCloudCanvas';
 
 export default function WordCloudPage() {
   const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     const fetchSubmissions = async () => {
@@ -13,15 +15,17 @@ export default function WordCloudPage() {
           setSubmissions(data.submissions);
         }
       } catch (err) {
-        console.error('Error fetching submissions:', err);
+        console.error('Error retrieving submissions:', err);
+        setLoadError(true);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchSubmissions();
-    const intervalId = setInterval(fetchSubmissions, 5000);
-    return () => clearInterval(intervalId);
+    fetchSubmissions(); // ✅ Only once on initial load
   }, []);
 
+  // Convert answers to frequency map
   const wordFrequencies = submissions.reduce((acc, curr) => {
     const ans = curr.answer.trim().toLowerCase();
     if (ans) {
@@ -31,14 +35,22 @@ export default function WordCloudPage() {
   }, {});
 
   const words = Object.entries(wordFrequencies)
-    .sort((a, b) => b[1] - a[1]) // sort by frequency
-    .slice(0, 100) // only top 100
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 100)
     .map(([text, value]) => ({ text, value }));
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Eid Milan Venue Puzzle Word Cloud</h1>
-      {words.length === 0 ? <p>No submissions yet.</p> : <WordCloudCanvas words={words} />}
+      <h1 style={{ marginBottom: '20px' }}>🎨 Eid Milan Venue Puzzle Word Cloud</h1>
+      {loading ? (
+        <p>Loading...</p>
+      ) : loadError ? (
+        <p style={{ color: 'red' }}>Error loading word cloud. Please try again later.</p>
+      ) : words.length === 0 ? (
+        <p>No submissions yet.</p>
+      ) : (
+        <WordCloudCanvas words={words} />
+      )}
     </div>
   );
 }
