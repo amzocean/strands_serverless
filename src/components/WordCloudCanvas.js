@@ -1,44 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import WordCloudCanvas from '../components/WordCloudCanvas';
+import React, { useRef, useEffect } from 'react';
+import cloud from 'd3-cloud';
 
-export default function WordCloudPage() {
-  const [submissions, setSubmissions] = useState([]);
+export default function WordCloudCanvas({ words }) {
+  const canvasRef = useRef();
+  const prevWordsRef = useRef(null); // used to prevent unnecessary re-renders
 
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      try {
-        const res = await fetch('/api/getAnswers');
-        const data = await res.json();
-        if (data.submissions) {
-          setSubmissions(data.submissions);
-        }
-      } catch (err) {
-        console.error('Error fetching submissions:', err);
-      }
-    };
+    const currWordsStr = JSON.stringify(words);
+    if (prevWordsRef.current === currWordsStr) return;
+    prevWordsRef.current = currWordsStr;
 
-    fetchSubmissions();
-    const intervalId = setInterval(fetchSubmissions, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
+    if (!words || words.length === 0) return;
 
-  const wordFrequencies = submissions.reduce((acc, curr) => {
-    const ans = curr.answer.trim().toLowerCase();
-    if (ans) {
-      acc[ans] = (acc[ans] || 0) + 1;
+    const canvasWidth = 900;
+    const canvasHeight = 600;
+
+    const layout = cloud()
+      .size([canvasWidth, canvasHeight])
+      .words(words.map(d => ({ text: d.text, size: 12 + d.value * 3 }))) // reduced size multiplier
+      .padding(2)
+      .rotate(() => 0) // no rotation for better packing
+      .font('sans-serif')
+      .fontSize(d => d.size)
+      .on('end', draw);
+
+    layout.start();
+
+    function draw(words) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      words.forEach(word => {
+        ctx.save();
+        ctx.translate(word.x + canvas.width / 2, word.y + canvas.height / 2);
+        ctx.font = `${word.size}px ${word.font}`;
+        ctx.fillStyle = getColor(word.text);
+        ctx.fillText(word.text, 0, 0);
+        ctx.restore();
+      });
     }
-    return acc;
-  }, {});
 
-  const words = Object.entries(wordFrequencies)
-    .sort((a, b) => b[1] - a[1]) // sort by frequency
-    .slice(0, 100) // only top 100
-    .map(([text, value]) => ({ text, value }));
+    function getColor(text) {
+      const palette = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd'];
+      return palette[text.length % palette.length];
+    }
+  }, [words]);
 
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1>Eid Milan Venue Puzzle Word Cloud</h1>
-      {words.length === 0 ? <p>No submissions yet.</p> : <WordCloudCanvas words={words} />}
-    </div>
+    <canvas
+      ref={canvasRef}
+      width={900}
+      height={600}
+      style={{
+        border: '1px solid #ccc',
+        borderRadius: '8px',
+        maxWidth: '100%',
+        height: 'auto',
+        display: 'block',
+        margin: '0 auto'
+      }}
+    />
   );
 }
