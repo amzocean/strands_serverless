@@ -41,7 +41,7 @@ export default function WordCloudPage() {
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h1 style={{ marginBottom: '20px' }}>🎨 Eid Milan Venue Puzzle Word Cloud</h1>
+      <h1 style={{ marginBottom: '20px' }}>Eid Milan Venue Puzzle Word Cloud</h1>
       {loading ? (
         <p>Loading...</p>
       ) : loadError ? (
