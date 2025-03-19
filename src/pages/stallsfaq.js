@@ -1,30 +1,17 @@
-import React from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 
 export default function StallsFAQ() {
+  const router = useRouter();
+
+  useEffect(() => {
+    window.location.href =
+      'https://docs.google.com/document/d/1mvHfHqxG7BVg3f_0mpE9Wu2CHgOukS5iOPNH1TIJm5I/view';
+  }, []);
+
   return (
-    <div style={styles.container}>
-      <iframe
-        title="Stalls FAQ Document"
-        src="https://docs.google.com/document/d/1mvHfHqxG7BVg3f_0mpE9Wu2CHgOukS5iOPNH1TIJm5I/preview"
-        style={styles.iframe}
-        allowFullScreen
-      />
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <p>Redirecting to Stalls FAQ...</p>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    margin: 0,
-    padding: 0,
-    height: '100vh',
-    width: '100vw',
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-  iframe: {
-    width: '100%',
-    height: '100%',
-    border: 'none',
-  },
-};
