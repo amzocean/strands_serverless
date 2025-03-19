@@ -32,14 +32,9 @@ export default function Home() {
           REGISTER YOUR STALL
         </a>
 
-        <a 
-          href="https://docs.google.com/document/d/1mvHfHqxG7BVg3f_0mpE9Wu2CHgOukS5iOPNH1TIJm5I/edit?tab=t.0" 
-          style={styles.link} 
-          target="_blank" 
-          rel="noopener noreferrer"
-        >
+        <Link href="/stallsfaq" style={styles.link}>
           STALLS FAQ
-        </a>
+        </Link>
 
         <Link href="/game" style={styles.link}>
           PLAY A GAME!
