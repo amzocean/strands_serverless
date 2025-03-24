@@ -32,6 +32,10 @@ export default function Home() {
           REGISTER YOUR STALL
         </a>
 
+        <Link href="/eidihunt" style={styles.link}>
+          SIGN UP FOR EIDI HUNT
+        </Link>        
+
         <Link href="/stallsfaq" style={styles.link}>
           STALLS FAQ
         </Link>
