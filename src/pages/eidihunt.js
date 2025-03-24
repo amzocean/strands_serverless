@@ -11,7 +11,7 @@ export default function StallsFAQ() {
 
   return (
     <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <p>Redirecting to Stalls FAQ...</p>
+      <p>Redirecting to Eidi Hunt Signup Form...</p>
     </div>
   );
 }
