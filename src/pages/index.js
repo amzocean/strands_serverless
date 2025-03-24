@@ -33,7 +33,7 @@ export default function Home() {
         </a>
 
         <Link href="/eidihunt" style={styles.link}>
-          SIGN UP FOR EIDI HUNT
+          SIGNUP FOR EIDI HUNT
         </Link>        
 
         <Link href="/stallsfaq" style={styles.link}>
