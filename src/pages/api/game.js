@@ -1,5 +1,5 @@
     const gameData = {
-      gameId: "game-2025-03-27-eidmilanplay1",
+      gameId: "game-2025-03-27-eidmilanplay2",
       theme: "Eid Milan Play",
       letter_grid: [
         [
