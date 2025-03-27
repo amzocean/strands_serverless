@@ -12,10 +12,16 @@ export default function Home() {
 
       {/* Links Section */}
       <div style={styles.linkWrapper}>
+      <Link href="/eidihunt" legacyBehavior>
+        <a className="animated-button" style={styles.link}>
+          SIGN UP FOR EIDI HUNT
+        </a>
+      </Link>
+
+
         <a 
           href="https://forms.gle/ygCP2sjcj4T71Yvn9" 
           style={styles.link} 
-          className="animated-button"
           target="_blank" 
           rel="noopener noreferrer"
         >
@@ -25,16 +31,11 @@ export default function Home() {
         <a 
           href="https://docs.google.com/forms/d/e/1FAIpQLSchi1k4GpPBmw7uQuxnFXbxBfQWE_QtM8qR_dn3wVhkwDvQ7Q/viewform?usp=header" 
           style={styles.link} 
-          className="animated-button"
           target="_blank" 
           rel="noopener noreferrer"
         >
           REGISTER YOUR STALL
         </a>
-
-        <Link href="/eidihunt" style={styles.link}>
-          SIGNUP FOR EIDI HUNT
-        </Link>        
 
         <Link href="/stallsfaq" style={styles.link}>
           STALLS FAQ
@@ -106,9 +107,7 @@ const styles = {
   linkWrapper: {
     display: 'flex',
     flexDirection: 'column',
-    // Increase vertical spacing between buttons
     gap: '25px',
-    // Add more margin to space the section out vertically
     marginTop: '40px',
     marginBottom: '40px',
     width: '90%',

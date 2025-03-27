@@ -685,7 +685,14 @@ export default function Game() {
           <p>Thank you {playerName}. Your score was submitted to the RAFFLEBOARD!</p>
           <p>
             Make sure to sign up your team for EIDI HUNT. Sign up at{" "}
-            <a href="https://www.eidmilan.com" target="_blank" rel="noopener noreferrer">eidmilan.com</a>
+            <a 
+              href="https://www.eidmilan.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="eid-link"
+            >
+              eidmilan.com
+            </a>
           </p>
           <button onClick={() => setShowThankYou(false)} className="submit-button">Close</button>
         </div>
@@ -729,6 +736,15 @@ export default function Game() {
           color: #000;
           font-family: inherit;
         }
+        .eid-link {
+          color: #2196F3;
+          text-decoration: underline;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .eid-link:hover {
+          color: #1565c0;
+        }          
         .tutorial-button {
           position: absolute;
           top: 10px;
