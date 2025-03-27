@@ -684,7 +684,7 @@ export default function Game() {
         <div className="popup">
           <p>Thank you {playerName}. Your score was submitted to the RAFFLEBOARD!</p>
           <p>
-            Make sure to sign up for Eid Milan to be eligible for a raffle prize. Sign up at{" "}
+            Make sure to sign up your team for EIDI HUNT. Sign up at{" "}
             <a href="https://www.eidmilan.com" target="_blank" rel="noopener noreferrer">eidmilan.com</a>
           </p>
           <button onClick={() => setShowThankYou(false)} className="submit-button">Close</button>
