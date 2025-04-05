@@ -18,6 +18,7 @@ export default function EidihuntCheck() {
     "K5QE3UVRM": "Meet volunteer Husain bhai Mandsaurwala to get your next task.",
     "L1XP4TBNC": "Meet volunteer Fatema ben Rangwala to get your next task.",
     "M2ZK6YRHD": "Meet volunteer Mohammed bhai Rangwala to get your next task."
+    "QR5Z8YVFD": "Meet volunteer Mohammed bhai Rangwala to get your next task."
   };
   
 
