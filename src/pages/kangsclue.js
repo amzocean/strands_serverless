@@ -5,20 +5,20 @@ export default function EidihuntCheck() {
   const [result, setResult] = useState(null);
 
   const validPasswords = {
-    "A7DK5LQXM": "Meet volunteer Huzefa bhai Karachiwala to get your next task.",
-    "B3PZ9TWER": "Meet volunteer Husein Bhai Merchant to get your next task.",
-    "C6L8XNTRV": "Meet volunteer Jamila ben Hararwala to get your next task.",
-    "D4WQ7MPNZ": "Meet volunteer Husain bhai Mandsaurwala to get your next task.",
-    "E9FJ2LKTH": "Meet volunteer Fatema ben Rangwala to get your next task.",
-    "F2MC5YUZQ": "Meet volunteer Mohammed bhai Rangwala to get your next task.",
-    "G7NP1QWEM": "Meet volunteer Abdeali bhai Arsiwala to get your next task.",
-    "H3RZ6BXUY": "Meet volunteer Huzefa bhai Karachiwala to get your next task.",
-    "I8TY9CKQP": "Meet volunteer Husein Bhai Merchant to get your next task.",
-    "J6WA7DMLE": "Meet volunteer Jamila ben Hararwala to get your next task.",
-    "K5QE3UVRM": "Meet volunteer Husain bhai Mandsaurwala to get your next task.",
-    "L1XP4TBNC": "Meet volunteer Fatema ben Rangwala to get your next task.",
-    "M2ZK6YRHD": "Meet volunteer Mohammed bhai Rangwala to get your next task."
-    "QR5Z8YVFD": "Meet volunteer Mohammed bhai Rangwala to get your next task."
+    "A7DK5LQXM": "Meet Jamila ben Hararwala to get your Eidi to progress further.",
+    "B3PZ9TWER": "Meet Jamila ben Hararwala to get your Eidi to progress further.",
+    "C6L8XNTRV": "Meet Fatema ben Rangwala to get your Eidi to progress further.",
+    "D4WQ7MPNZ": "Meet Fatema ben Rangwala to get your Eidi to progress further.",
+    "E9FJ2LKTH": "Meet Fatema ben Rangwala to get your Eidi to progress further.",
+    "F2MC5YUZQ": "Meet Husain bhai Mandsaurwala to get your Eidi to progress further.",
+    "G7NP1QWEM": "Meet Husain bhai Mandsaurwala to get your Eidi to progress further.",
+    "H3RZ6BXUY": "Meet Husein bhai Merchant to get your Eidi to progress further.",
+    "I8TY9CKQP": "Meet Husein bhai Merchant to get your Eidi to progress further.",
+    "J6WA7DMLE": "Meet Husein bhai Merchant to get your Eidi to progress further.",
+    "K5QE3UVRM": "Meet Mohammed bhai Rangwala to get your Eidi to progress further.",
+    "L1XP4TBNC": "Meet Mohammed bhai Rangwala to get your Eidi to progress further.",
+    "M2ZK6YRHD": "Meet Huzeifa bhai Karachiwala to get your Eidi to progress further.",
+    "QR5Z8YVFD": "Meet Huzeifa bhai Karachiwala to get your Eidi to progress further."
   };
   
 
