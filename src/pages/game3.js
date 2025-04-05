@@ -35,19 +35,24 @@ export default function Game() {
     setShowTutorial(!showTutorial);
   };
 
+  // On component mount, load game data and check localStorage for progress and final message flag.
   useEffect(() => {
     fetchGameData();
 
-    const completed = localStorage.getItem("gameCompleted");
-    if (completed === "true") {
-      const stateString = localStorage.getItem("completedState");
+    const gameId = localStorage.getItem("gameId") || "default";
+    const completedFlagKey = `game_${gameId}_completed`;
+    const inProgressKey = `game_${gameId}_inProgressState`;
+    const completedKey = `game_${gameId}_completedState`;
+
+    if (localStorage.getItem(completedFlagKey) === "true") {
+      const stateString = localStorage.getItem(completedKey);
       if (stateString) {
         const state = JSON.parse(stateString);
         setFoundWords(state.foundWords || []);
         setPuzzleComplete(true);
       }
     } else {
-      const progressString = localStorage.getItem("inProgressState");
+      const progressString = localStorage.getItem(inProgressKey);
       if (progressString) {
         const state = JSON.parse(progressString);
         setFoundWords(state.foundWords || []);
@@ -55,7 +60,7 @@ export default function Game() {
         setHintedWord(state.hintedWord || "");
       }
     }
-    // Check if the final message was previously set
+    // Check if the final message flag is set.
     if (localStorage.getItem("finalMessageVisible") === "true") {
       setFinalMessageVisible(true);
     }
@@ -64,23 +69,36 @@ export default function Game() {
   const fetchGameData = () => {
     axios.get("/api/game3")
       .then(response => {
-        console.log("Fetched game data:", response.data);
-        const newGameId = response.data.gameId || "default";
-        const storedGameId = localStorage.getItem("gameId");
-        if (storedGameId && storedGameId !== newGameId) {
-          localStorage.removeItem("gameCompleted");
-          localStorage.removeItem("completedState");
-          localStorage.removeItem("inProgressState");
-          localStorage.removeItem("finalMessageVisible");
+        const gameId = response.data.gameId || "default";
+        const inProgressKey = `game_${gameId}_inProgressState`;
+        const completedKey = `game_${gameId}_completedState`;
+        const completedFlagKey = `game_${gameId}_completed`;
+
+        if (localStorage.getItem(completedFlagKey) === "true") {
+          const stateString = localStorage.getItem(completedKey);
+          if (stateString) {
+            const state = JSON.parse(stateString);
+            setFoundWords(state.foundWords || []);
+            setPuzzleComplete(true);
+          }
+        } else {
+          const progressString = localStorage.getItem(inProgressKey);
+          if (progressString) {
+            const state = JSON.parse(progressString);
+            setFoundWords(state.foundWords || []);
+            setAttemptSequence(state.attemptSequence || []);
+            setHintedWord(state.hintedWord || "");
+          }
         }
-        localStorage.setItem("gameId", newGameId);
+
+        localStorage.setItem("gameId", gameId);
         setGame(response.data);
+
         const mapping = {};
         response.data.valid_words.forEach((word, index) => {
-          mapping[word] =
-            word === response.data.spangram
-              ? spangramColor
-              : otherColors[(index - 1) % otherColors.length];
+          mapping[word] = word === response.data.spangram
+            ? spangramColor
+            : otherColors[(index - 1) % otherColors.length];
         });
         setColorMapping(mapping);
       })
@@ -122,7 +140,6 @@ export default function Game() {
       const rowDiff = Math.abs(row - last.row);
       const colDiff = Math.abs(col - last.col);
       if (rowDiff > 1 || colDiff > 1) {
-        console.log("Non-adjacent letter clicked. Clearing previous selection.");
         setSelectedLetters([{ letter, row, col }]);
         return;
       }
@@ -239,9 +256,7 @@ export default function Game() {
   function buildFoundWordLines(word) {
     if (!game) return null;
     const route = getEffectiveRoute(word);
-    if (!route || route.length < 2) {
-      return null;
-    }
+    if (!route || route.length < 2) return null;
     const isSpangram = (word === game.spangram);
     const strokeColor = "red";
     const strokeW = isSpangram ? 5 : 3;
@@ -310,15 +325,22 @@ export default function Game() {
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
     setAttemptSequence(nextAttemptSequence);
-    localStorage.setItem("inProgressState", JSON.stringify({
+    
+    const gameId = localStorage.getItem("gameId") || "default";
+    const inProgressKey = `game_${gameId}_inProgressState`;
+    const completedKey = `game_${gameId}_completedState`;
+    const completedFlagKey = `game_${gameId}_completed`;
+    
+    localStorage.setItem(inProgressKey, JSON.stringify({
       foundWords: nextFoundWords,
       attemptSequence: nextAttemptSequence,
       hintedWord
     }));
+    
     if (nextFoundWords.length === game.valid_words.length) {
       setPuzzleComplete(true);
-      localStorage.setItem("gameCompleted", "true");
-      localStorage.setItem("completedState", JSON.stringify({
+      localStorage.setItem(completedFlagKey, "true");
+      localStorage.setItem(completedKey, JSON.stringify({
         foundWords: nextFoundWords
       }));
       setShowFinalPopup(true);
@@ -370,9 +392,13 @@ export default function Game() {
   };
 
   const resetGame = () => {
-    localStorage.removeItem("gameCompleted");
-    localStorage.removeItem("completedState");
-    localStorage.removeItem("inProgressState");
+    const gameId = localStorage.getItem("gameId") || "default";
+    const inProgressKey = `game_${gameId}_inProgressState`;
+    const completedKey = `game_${gameId}_completedState`;
+    const completedFlagKey = `game_${gameId}_completed`;
+    localStorage.removeItem(inProgressKey);
+    localStorage.removeItem(completedKey);
+    localStorage.removeItem(completedFlagKey);
     localStorage.removeItem("finalMessageVisible");
     setFoundWords([]);
     setSelectedLetters([]);
