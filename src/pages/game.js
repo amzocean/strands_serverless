@@ -8,62 +8,35 @@ export default function Game() {
   const [game, setGame] = useState(null);
   const [selectedLetters, setSelectedLetters] = useState([]);
   const [foundWords, setFoundWords] = useState([]);
-  const [foundRoutes, setFoundRoutes] = useState({}); // Store user-selected routes
+  const [foundRoutes, setFoundRoutes] = useState({});
   const [attemptSequence, setAttemptSequence] = useState([]);
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [hintedWord, setHintedWord] = useState("");
   const [hintCounter, setHintCounter] = useState(0);
-  const [hintWordsUsed, setHintWordsUsed] = useState([]);
-  // Removed manual score-submission popup state.
-  // NEW: Added thank you message state
-  const [showThankYou, setShowThankYou] = useState(false);
-  // NEW: Added name prompt popup state
-  const [showNamePrompt, setShowNamePrompt] = useState(false);
-  // Show tutorial on page load.
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [colorMapping, setColorMapping] = useState({});
-  // playerName now is taken at the very beginning (from name prompt)
-  const [playerName, setPlayerName] = useState("");
-  const [leaderboard, setLeaderboard] = useState([]);
   const [puzzleComplete, setPuzzleComplete] = useState(false);
   const [isSwiping, setIsSwiping] = useState(false);
-  // Use numerical scoring
-  const [score, setScore] = useState(0);
-  // NEW: Prevent duplicate submission of score
-  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [colorMapping, setColorMapping] = useState({});
+  const [showFinalPopup, setShowFinalPopup] = useState(false);
+  const [finalMessageVisible, setFinalMessageVisible] = useState(false);
 
-  // Scoring rules:
-  // +100 for correct, -10 for wrong, -50 for hint usage
-  // +200 for spangram (instead of +100)
-
-  // Emoji variables (left for legacy display if needed)
-  const spangramEmoji = "🟡";
-  const correctEmoji = "🟢";
-  const failEmoji = "⚫";
-
-  // Colors
+  // Colors configuration
   const spangramColor = "#FFD966";
   const otherColors = [
     "#FDE2E4", "#FAE2EF", "#FAF6C0", "#D8F3DC",
     "#BDE0FE", "#A9DEF9", "#FFC8DD", "#C5E1E6", "#FFF1C9"
   ];
 
-  // Grid cell size and offset for connectors
   const cellSize = 70;
   const offsetDist = 15;
-
-  // Reference for the SVG element (for touch coordinate calculations)
   const svgRef = useRef(null);
 
-  // Toggle tutorial modal
   const toggleTutorial = () => {
     setShowTutorial(!showTutorial);
   };
 
-  // On initial load, fetch game data, leaderboard, and load any saved state.
   useEffect(() => {
     fetchGameData();
-    fetchLeaderboard();
 
     const completed = localStorage.getItem("gameCompleted");
     if (completed === "true") {
@@ -71,7 +44,6 @@ export default function Game() {
       if (stateString) {
         const state = JSON.parse(stateString);
         setFoundWords(state.foundWords || []);
-        setScore(state.score || 0);
         setPuzzleComplete(true);
       }
     } else {
@@ -79,38 +51,27 @@ export default function Game() {
       if (progressString) {
         const state = JSON.parse(progressString);
         setFoundWords(state.foundWords || []);
-        setScore(state.score || 0);
         setAttemptSequence(state.attemptSequence || []);
         setHintedWord(state.hintedWord || "");
       }
     }
-  }, []);
-
-  // NEW: After game is loaded, check for player name tied to this game id.
-  useEffect(() => {
-    if (game) {
-      const gameId = localStorage.getItem("gameId");
-      const storedName = localStorage.getItem(`playerName_${gameId}`);
-      if (storedName) {
-        setPlayerName(storedName);
-      } else {
-        setShowNamePrompt(true);
-      }
+    // Check if the final message was previously set
+    if (localStorage.getItem("finalMessageVisible") === "true") {
+      setFinalMessageVisible(true);
     }
-  }, [game]);
+  }, []);
 
   const fetchGameData = () => {
     axios.get("/api/game")
       .then(response => {
         console.log("Fetched game data:", response.data);
-        // Assume API returns gameId – e.g., "game-2025-03-04-BAYAAN"
         const newGameId = response.data.gameId || "default";
         const storedGameId = localStorage.getItem("gameId");
         if (storedGameId && storedGameId !== newGameId) {
-          // New game available; clear any previous completed state.
           localStorage.removeItem("gameCompleted");
           localStorage.removeItem("completedState");
           localStorage.removeItem("inProgressState");
+          localStorage.removeItem("finalMessageVisible");
         }
         localStorage.setItem("gameId", newGameId);
         setGame(response.data);
@@ -126,25 +87,6 @@ export default function Game() {
       .catch(error => console.error("Error fetching game:", error));
   };
 
-  const fetchLeaderboard = () => {
-    axios.get("/api/leaderboard")
-      .then(response => {
-        setLeaderboard(response.data);
-      })
-      .catch(error => console.error("Error fetching leaderboard:", error));
-  };
-
-  const isValidEnglish = async (word) => {
-    if (word.length < 4) return false;
-    try {
-      const response = await axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
-      return Array.isArray(response.data);
-    } catch {
-      return false;
-    }
-  };
-
-  // Helper to compare two routes (order-insensitive)
   function isSameRoute(routeA, routeB) {
     if (!routeA || !routeB || routeA.length !== routeB.length) return false;
     const format = (coord) =>
@@ -154,7 +96,6 @@ export default function Game() {
     return setA.every((val, index) => val === setB[index]);
   }
 
-  // Decide which route to use for a given word
   function getEffectiveRoute(word) {
     if (!game || !game.word_paths) return null;
     const defaultRoute = game.word_paths[word];
@@ -162,7 +103,6 @@ export default function Game() {
     return userRoute && isSameRoute(userRoute, defaultRoute) ? userRoute : defaultRoute;
   }
 
-  // Tap-based letter selection
   const handleLetterClick = (letter, row, col) => {
     if (puzzleComplete) return;
     if (submissionStatus) {
@@ -190,7 +130,6 @@ export default function Game() {
     setSelectedLetters(prev => [...prev, { letter, row, col }]);
   };
 
-  // --- Swipe-to-submit Handlers ---
   const handleTouchStart = (e) => {
     e.preventDefault();
     setIsSwiping(false);
@@ -254,7 +193,6 @@ export default function Game() {
     setIsSwiping(false);
   };
 
-  // Utility: Trim line segments so they don't overlap cell centers
   function trimSegment(x1, y1, x2, y2, offset) {
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -298,19 +236,14 @@ export default function Game() {
     return lines;
   }
 
-  // Build connectors for a solved word using the effective route.
   function buildFoundWordLines(word) {
     if (!game) return null;
-    console.log(`buildFoundWordLines for word="${word}"`);
     const route = getEffectiveRoute(word);
-    console.log(`Using route for "${word}":`, route);
     if (!route || route.length < 2) {
-      console.log(`No valid route for "${word}" => no lines drawn`);
       return null;
     }
-    // If it's the spangram, highlight more strongly
     const isSpangram = (word === game.spangram);
-    const strokeColor = isSpangram ? "red" : "red";
+    const strokeColor = "red";
     const strokeW = isSpangram ? 5 : 3;
     const strokeOp = isSpangram ? 0.6 : 0.3;
     const lines = [];
@@ -341,94 +274,55 @@ export default function Game() {
           strokeLinecap="round"
         />
       );
-      console.log(`Segment ${i}: from [${r1},${c1}] to [${r2},${c2}] => coords:`, { x1: tx1, y1: ty1, x2: tx2, y2: ty2 });
     }
     return lines;
   }
 
-  // UPDATED: In submitWord we now pass the computed newScore to submitScore.
   const submitWord = async () => {
     if (!game || puzzleComplete) return;
     const word = selectedLetters.map(l => l.letter).join("");
-    // Ignore submission if word is less than 4 letters (and do not deduct score)
     if (word.length < 4) {
-      console.log("Submission ignored: word too short");
       setSubmissionStatus("Word too short");
       setSelectedLetters([]);
       return;
     }
-    console.log("Submitting word:", word);
     let nextFoundWords = [...foundWords];
     let nextAttemptSequence = [...attemptSequence];
-    let newScore = score;
-    const routeToSave = [...selectedLetters]; // Capture user-selected route
+    const routeToSave = [...selectedLetters];
     if (game.valid_words.includes(word)) {
-      console.log("Word is correct");
       if (!foundWords.includes(word)) {
         nextFoundWords.push(word);
         nextAttemptSequence.push(word);
         setSubmissionStatus(`${word} ✅`);
         setFoundRoutes(prev => ({ ...prev, [word]: routeToSave }));
         if (word === hintedWord) setHintedWord("");
-        if (word === game.spangram) {
-          newScore += 200;
-        } else {
-          newScore += 100;
-        }
         if (navigator.vibrate) {
           navigator.vibrate(100);
         }
       }
     } else {
-      console.log("Word is incorrect");
       nextAttemptSequence.push("FAIL");
       setSubmissionStatus(`${word} ❌`);
-      newScore -= 10;
       if (navigator.vibrate) {
         navigator.vibrate(200);
       }
     }
-    console.log("foundWords after submission:", nextFoundWords);
     setSelectedLetters([]);
     setFoundWords(nextFoundWords);
-    setScore(newScore);
     setAttemptSequence(nextAttemptSequence);
     localStorage.setItem("inProgressState", JSON.stringify({
       foundWords: nextFoundWords,
-      score: newScore,
       attemptSequence: nextAttemptSequence,
       hintedWord
     }));
     if (nextFoundWords.length === game.valid_words.length) {
-      console.log("All words found => puzzleComplete = true");
       setPuzzleComplete(true);
       localStorage.setItem("gameCompleted", "true");
       localStorage.setItem("completedState", JSON.stringify({
-        foundWords: nextFoundWords,
-        score: newScore
+        foundWords: nextFoundWords
       }));
-      // Pass the newScore so the final submission includes the last word’s points.
-      submitScore(newScore);
+      setShowFinalPopup(true);
     }
-  };
-
-  // UPDATED: submitScore now accepts an optional finalScore parameter.
-  const submitScore = (finalScore) => {
-    const scoreToSubmit = finalScore !== undefined ? finalScore : score;
-    if (!playerName.trim() || isSubmittingScore) return;
-    setIsSubmittingScore(true);
-    const shareText = `Eid Milan Game #1\nScore: ${scoreToSubmit}\nwww.eidmilan.com`;
-    axios.post("/api/submit-score", { name: playerName, score: scoreToSubmit })
-      .then(response => {
-        setLeaderboard(response.data.leaderboard);
-        setIsSubmittingScore(false);
-        // Show the final thank-you popup with a custom message.
-        setShowThankYou(true);
-      })
-      .catch(error => {
-        console.error("Error submitting score:", error);
-        setIsSubmittingScore(false);
-      });
   };
 
   const clearSelection = () => {
@@ -436,7 +330,6 @@ export default function Game() {
     setSubmissionStatus("");
   };
 
-  // For cell background coloring, use the effective route.
   const getCellColor = (row, col) => {
     if (!game || !game.word_paths) return undefined;
     for (let word of foundWords) {
@@ -456,19 +349,13 @@ export default function Game() {
 
   const foundWordLines = foundWords.flatMap(word => {
     const lines = buildFoundWordLines(word);
-    console.log(`Lines for word="${word}" =>`, lines);
     return lines || [];
   });
-  console.log("Final foundWordLines array =>", foundWordLines);
 
-  const displayScore = () => {
-    return score;
-  };
-
-  // Hint mechanism: always available.
-  // Subtract 50 points only if new hint is different from current.
+  // Modified hint mechanism: limit to 2 hints per game, no score deduction.
   const handleHint = () => {
     if (!game) return;
+    if (hintCounter >= 2) return;
     const unsolved = game.valid_words.filter(word => !foundWords.includes(word));
     if (unsolved.length === 0) return;
     let newHint = "";
@@ -478,47 +365,24 @@ export default function Game() {
     } else {
       newHint = unsolved[0];
     }
-    // Only subtract points if the new hint differs from the current one.
-    if (newHint !== hintedWord) {
-      setHintedWord(newHint);
-      setScore(prev => prev - 50);
-    }
-  };
-
-  const handleShareScore = () => {
-    const shareText = `Eid Milan Game #1\nScore: ${score}\nwww.eidmilan.com`;
-    if (navigator.share) {
-      navigator.share({ title: "Eid Milan Game", text: shareText })
-        .catch(error => console.error("Error sharing:", error));
-    } else {
-      navigator.clipboard.writeText(shareText)
-        .catch(err => console.error("Failed to copy score."));
-    }
-  };
-
-  // AUTO-SUBMIT SCORE using the stored player name.
-  // (submitScore now gets called from submitWord with the final computed score.)
-  // NEW: Handler for saving the player's name from the initial name prompt.
-  const handleNameSubmit = () => {
-    if (!playerName.trim()) return;
-    const gameId = localStorage.getItem("gameId");
-    localStorage.setItem(`playerName_${gameId}`, playerName);
-    setShowNamePrompt(false);
+    setHintedWord(newHint);
+    setHintCounter(prev => prev + 1);
   };
 
   const resetGame = () => {
-    // Remove saved progress from local storage.
     localStorage.removeItem("gameCompleted");
     localStorage.removeItem("completedState");
     localStorage.removeItem("inProgressState");
+    localStorage.removeItem("finalMessageVisible");
     setFoundWords([]);
     setSelectedLetters([]);
-    setScore(0);
     setAttemptSequence([]);
     setSubmissionStatus("");
     setHintedWord("");
     setPuzzleComplete(false);
     setFoundRoutes({});
+    setHintCounter(0);
+    setFinalMessageVisible(false);
     fetchGameData();
   };
 
@@ -529,16 +393,12 @@ export default function Game() {
     : 0;
 
   const hintButtonText = "HINT";
-
   const svgWidth = game.letter_grid[0].length * cellSize;
   const svgHeight = game.letter_grid.length * cellSize;
 
   return (
     <div className="container">
-      {/* Tutorial Button */}
       <button className="tutorial-button" onClick={toggleTutorial}>?</button>
-
-      {/* Tutorial Modal */}
       {showTutorial && (
         <div className="tutorial-modal">
           <div className="tutorial-content">
@@ -554,23 +414,18 @@ export default function Game() {
               <li>👆 <strong>Select letters</strong> by tapping or swiping—each new letter must be adjacent (including diagonals).</li>
               <li>🔒 <strong>Each letter can be used only once!</strong></li>
               <li>🔒 <strong>All words occupy the board entirely!</strong></li>
-              <li>🌟 Find the <strong>Spangram</strong>: a special word (or two-word phrase) that spans the board. Solving it gives you extra points (+200) and a brighter highlight!</li>
+              <li>🌟 Find the <strong>Spangram</strong>: a special word that spans the board. Solving it gives a brighter highlight!</li>
               <li>✅ Press <strong>SUBMIT</strong> (or complete your swipe) to check your word.</li>
-              <li>💡 Tap <strong>HINT</strong> to get a hint.</li>
-              <li>💯 <strong>SCORING</strong>: +100 for normal words, +200 for the spangram, -10 for wrong submissions, and -50 per new hint.</li>
+              <li>💡 Tap <strong>HINT</strong> to get a hint (maximum 2 per game).</li>
               <li>❌ Tap <strong>CLEAR</strong> to reset your selection or backtrack your swipe.</li>
-              <li>🏆 Solve them all and your score will automatically be submitted to the RAFFLEBOARD!</li>
+              <li>🏆 Solve them all and enjoy the final instructions!</li>
             </ul>
             <button className="close-tutorial" onClick={toggleTutorial}>Close</button>
           </div>
         </div>
       )}
-
       <div className="theme-pill">Theme: {game.theme}</div>
-      
-      {/* Game summary text */}
       <div className="game-summary">{summaryText}</div>
-
       <div className="selected-letters-container">
         <div className="selected-letters">
           {submissionStatus !== ""
@@ -578,8 +433,6 @@ export default function Game() {
             : selectedLetters.map(l => l.letter).join("")}
         </div>
       </div>
-
-      {/* Main SVG with touch events for swipe submission */}
       <svg
         ref={svgRef}
         width={svgWidth}
@@ -607,10 +460,8 @@ export default function Game() {
             );
           })
         )}
-
         {foundWordLines}
         {buildCurrentSelectionLines()}
-
         {game.letter_grid.map((row, rowIndex) =>
           row.map((letter, colIndex) => {
             const x = colIndex * cellSize;
@@ -643,7 +494,6 @@ export default function Game() {
           })
         )}
       </svg>
-
       <div className="progress-bar-container">
         <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }}>
           <span className="progress-text">
@@ -651,73 +501,41 @@ export default function Game() {
           </span>
         </div>
       </div>
-
       <div className="action-buttons">
         <button onClick={clearSelection} className="clear-button">CLEAR</button>
-        <button onClick={handleHint} className="hint-button">{hintButtonText}</button>
+        <button onClick={handleHint} className="hint-button" disabled={hintCounter >= 2}>{hintButtonText}</button>
         <button onClick={submitWord} className="submit-button" disabled={puzzleComplete}>
           SUBMIT
         </button>
       </div>
-
-      <div className="live-score">
-        Score: {displayScore()}
-      </div>
-
-      {/* NEW: Name prompt popup on initial page load */}
-      {showNamePrompt && (
+      {showFinalPopup && (
         <div className="popup">
-          <p>Please enter your name to play the game:</p>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Your name"
-            className="name-input"
-          />
-          <button onClick={handleNameSubmit} className="submit-button">Save</button>
+          <p>Congratulations!</p>
+          <ol>
+            <li>Take a screenshot of the solved game and send it.</li>
+            <li>Grab a selfie with at least two of your teammates by the 'Spanagram' object in the venue.</li>
+          </ol>
+          <button 
+            onClick={() => {
+              setShowFinalPopup(false);
+              setFinalMessageVisible(true);
+              localStorage.setItem("finalMessageVisible", "true");
+            }} 
+            className="submit-button"
+          >
+            Close
+          </button>
         </div>
       )}
-
-      {/* NEW: Final thank-you popup after auto-submission */}
-      {showThankYou && (
-        <div className="popup">
-          <p>Thank you {playerName}. Your score was submitted to the RAFFLEBOARD!</p>
-          <p>
-            Make sure to sign up your team for EIDI HUNT. Sign up at{" "}
-            <a 
-              href="https://www.eidmilan.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="eid-link"
-            >
-              eidmilan.com
-            </a>
-          </p>
-          <button onClick={() => setShowThankYou(false)} className="submit-button">Close</button>
+      {finalMessageVisible && (
+        <div className="final-message">
+          <p>Congratulations!</p>
+          <ol>
+            <li>Take a screenshot of the solved game and send it.</li>
+            <li>Grab a selfie with at least two of your teammates by the 'Spanagram' object in the venue.</li>
+          </ol>
         </div>
       )}
-
-      <div className="leaderboard" style={{ width: svgWidth }}>
-        <h2 className="leaderboard-title">RAFFLEBOARD</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>NAME</th>
-              <th>SCORE</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((entry, index) => (
-              <tr key={index}>
-                <td>{entry.name}</td>
-                <td>{entry.score}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
       <style jsx global>{`
         @import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap");
         html, body {
@@ -726,7 +544,6 @@ export default function Game() {
           font-family: "Montserrat", sans-serif;
         }
       `}</style>
-
       <style jsx>{`
         .container {
           position: relative;
@@ -736,15 +553,6 @@ export default function Game() {
           color: #000;
           font-family: inherit;
         }
-        .eid-link {
-          color: #2196F3;
-          text-decoration: underline;
-          font-weight: 500;
-          cursor: pointer;
-        }
-        .eid-link:hover {
-          color: #1565c0;
-        }          
         .tutorial-button {
           position: absolute;
           top: 10px;
@@ -889,12 +697,6 @@ export default function Game() {
           background-color: #90CAF9;
           color: #fff;
         }
-        .live-score {
-          font-size: 1.5rem;
-          font-weight: 600;
-          margin: 10px 0;
-          color: #333;
-        }
         .popup {
           position: fixed;
           top: 50%;
@@ -910,59 +712,11 @@ export default function Game() {
           width: 90%;
           max-width: 400px;
         }
-        .popup input {
-          padding: 10px;
-          font-size: 16px;
-          margin-top: 10px;
-          width: 80%;
-          background-color: #fff;
-          color: #000;
-          border: 1px solid #ccc;
-          font-family: inherit;
-        }
-        .popup .submit-button,
-        .popup .share-button {
-          padding: 10px 15px;
-          font-size: 16px;
-          margin: 10px 5px 0;
-          display: inline-block;
-        }
-        .leaderboard {
-          margin-top: 30px;
-          border-top: 1px solid #ccc;
-          padding-top: 10px;
-          font-family: inherit;
-          margin-left: auto;
-          margin-right: auto;
-        }
-        /* Constrain leaderboard table to container width and wrap text */
-        .leaderboard table {
-          width: 100%;
-          table-layout: fixed;
-          word-wrap: break-word;
-        }
-        .leaderboard th,
-        .leaderboard td {
-          overflow-wrap: break-word;
-        }
-        .leaderboard-title {
-          text-transform: uppercase;
-          font-weight: bold;
-          margin: 0 0 10px;
-        }
-        .leaderboard table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .leaderboard th,
-        .leaderboard td {
-          border: 1px solid #ddd;
-          padding: 8px;
+        .final-message {
+          margin-top: 20px;
+          padding: 15px;
+          border: 2px solid #333;
           text-align: center;
-        }
-        .leaderboard th {
-          background-color: #f2f2f2;
-          font-weight: bold;
         }
         @media (max-width: 600px) {
           .grid-container {
@@ -1030,36 +784,9 @@ export default function Game() {
             color: #fff;
             z-index: 10000;
           }
-          .popup input {
-            background-color: #3a3a3a;
-            color: #fff;
-            border: 1px solid #666;
-          }
-          .popup .submit-button,
-          .popup .share-button {
-            padding: 10px 15px;
-            font-size: 16px;
-            margin: 10px 5px 0;
-            display: inline-block;
-          }
-          .leaderboard th {
-            background-color: #333;
-            color: #fff;
-          }
-          .leaderboard td {
-            color: #fff;
-          }
-          .leaderboard th,
-          .leaderboard td {
+          .final-message {
             border-color: #555;
-          }
-          /* Make live score text white in dark mode */
-          .live-score {
             color: #fff;
-          }
-          /* Dark mode summary text */
-          .game-summary {
-            color: #ccc;
           }
         }
       `}</style>
