@@ -1,6 +1,6 @@
 const gameData = {
   theme: "LWHS",
-  gameId: "eidihunt3",
+  gameId: "eidihunt333",
   letter_grid: [
     [
       "T",
