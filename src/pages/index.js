@@ -147,7 +147,7 @@ export default function Home() {
           background: #FDFAF3;
           border: 1px solid rgba(201,168,76,0.15);
           border-radius: 4px;
-          padding: 20px;
+          padding: 24px;
           position: relative;
         }
         .clue-block::before {
@@ -169,7 +169,7 @@ export default function Home() {
           font-size: 44px;
           letter-spacing: 6px;
           text-align: center;
-          margin: 8px 0 16px;
+          margin: 14px 0 20px;
           line-height: 1;
           animation: float 3s ease-in-out infinite;
           display: block;
@@ -177,7 +177,7 @@ export default function Home() {
         .emoji-breakdown {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 14px;
         }
         .emoji-row {
           display: flex;
@@ -196,7 +196,7 @@ export default function Home() {
           align-items: flex-end;
           justify-content: center;
           gap: 8px;
-          margin-top: 20px;
+          margin-top: 26px;
           flex-wrap: nowrap;
         }
         .hangman-group {
