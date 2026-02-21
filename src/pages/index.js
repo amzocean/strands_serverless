@@ -195,9 +195,9 @@ export default function Home() {
           display: flex;
           align-items: flex-end;
           justify-content: center;
-          gap: 10px;
+          gap: 8px;
           margin-top: 20px;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
         }
         .hangman-group {
           display: flex;
@@ -207,19 +207,19 @@ export default function Home() {
         }
         .hangman-dashes {
           display: flex;
-          gap: 7px;
+          gap: 5px;
           align-items: flex-end;
         }
         .dash {
           display: block;
-          width: 22px;
+          width: 18px;
           height: 2px;
           background: var(--gold);
           border-radius: 2px;
-          position: relative;
         }
         .hangman-space {
-          width: 14px;
+          width: 10px;
+          flex-shrink: 0;
         }
         .hangman-count {
           font-size: 9px;
@@ -228,6 +228,7 @@ export default function Home() {
           color: var(--muted);
           opacity: 0.6;
           font-weight: 600;
+          white-space: nowrap;
         }
 
         /* ── SEPARATOR ── */
@@ -385,7 +386,7 @@ export default function Home() {
           <div className="game-body">
             <div className="clue-section">
 
-              {/* CLUE 1: Ninja Cooker — 5 + 6 dashes, no revealed letters */}
+              {/* CLUE 1: Ninja Cooker — 5 + 6 dashes */}
               <div className="clue-block">
                 <div className="clue-label">Clue 1 — Emoji Code</div>
                 <span className="emoji-display">🥷🌀🔥💨</span>
@@ -402,7 +403,6 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="hangman-wrap">
-                  {/* NINJA — 5 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
@@ -414,7 +414,6 @@ export default function Home() {
                     <div className="hangman-count">5 letters</div>
                   </div>
                   <div className="hangman-space"></div>
-                  {/* COOKER — 6 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
@@ -429,7 +428,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* CLUE 2: Igloo Cooler — 5 + 6 dashes, no revealed letters */}
+              {/* CLUE 2: Igloo Cooler — 5 + 6 dashes */}
               <div className="clue-block">
                 <div className="clue-label">Clue 2 — Emoji Code</div>
                 <span className="emoji-display">🧊🏠❄️🧺</span>
@@ -446,7 +445,6 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="hangman-wrap">
-                  {/* IGLOO — 5 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
@@ -458,7 +456,6 @@ export default function Home() {
                     <div className="hangman-count">5 letters</div>
                   </div>
                   <div className="hangman-space"></div>
-                  {/* COOLER — 6 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
