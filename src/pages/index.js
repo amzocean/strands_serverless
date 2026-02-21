@@ -218,20 +218,6 @@ export default function Home() {
           border-radius: 2px;
           position: relative;
         }
-        .dash.revealed {
-          background: transparent;
-          border-bottom: 2px solid var(--gold);
-          height: auto;
-          width: 22px;
-          font-family: 'Cormorant Garamond', serif;
-          font-size: 18px;
-          font-weight: 700;
-          color: var(--green-dark);
-          text-align: center;
-          line-height: 1;
-          padding-bottom: 3px;
-          border-radius: 0;
-        }
         .hangman-space {
           width: 14px;
         }
@@ -384,7 +370,7 @@ export default function Home() {
       <div className="intro">
         <p className="intro-eyebrow">A Little Trivia First</p>
         <h1>Test your memory.<br /><em>Win 10 raffle tickets.</em></h1>
-        <p>Cast your mind back to last year&#39;s Eid Milan. Crack either clue, RSVP with your answer, and if you&#39;re one of the first 10  — the tickets are yours.</p>
+        <p>Cast your mind back to last year&#39;s Eid Milan. Crack either clue, RSVP with your answer, and if you&#39;re one of the first 10 — the tickets are yours.</p>
       </div>
 
       {/* GAME CARD */}
@@ -399,7 +385,7 @@ export default function Home() {
           <div className="game-body">
             <div className="clue-section">
 
-              {/* CLUE 1: Ninja Combi */}
+              {/* CLUE 1: Ninja Cooker — 5 + 6 dashes, no revealed letters */}
               <div className="clue-block">
                 <div className="clue-label">Clue 1 — Emoji Code</div>
                 <span className="emoji-display">🥷🌀🔥💨</span>
@@ -416,10 +402,11 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="hangman-wrap">
+                  {/* NINJA — 5 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
-                      <span className="dash revealed">I</span>
+                      <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
@@ -427,20 +414,22 @@ export default function Home() {
                     <div className="hangman-count">5 letters</div>
                   </div>
                   <div className="hangman-space"></div>
+                  {/* COOKER — 6 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
-                      <span className="dash revealed">O</span>
+                      <span className="dash"></span>
+                      <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
                     </div>
-                    <div className="hangman-count">5 letters</div>
+                    <div className="hangman-count">6 letters</div>
                   </div>
                 </div>
               </div>
 
-              {/* CLUE 2: Igloo Cooler */}
+              {/* CLUE 2: Igloo Cooler — 5 + 6 dashes, no revealed letters */}
               <div className="clue-block">
                 <div className="clue-label">Clue 2 — Emoji Code</div>
                 <span className="emoji-display">🧊🏠❄️🧺</span>
@@ -457,24 +446,26 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="hangman-wrap">
+                  {/* IGLOO — 5 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
                       <span className="dash"></span>
-                      <span className="dash revealed">L</span>
+                      <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
                     </div>
                     <div className="hangman-count">5 letters</div>
                   </div>
                   <div className="hangman-space"></div>
+                  {/* COOLER — 6 letters */}
                   <div className="hangman-group">
                     <div className="hangman-dashes">
                       <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
                       <span className="dash"></span>
-                      <span className="dash revealed">E</span>
+                      <span className="dash"></span>
                       <span className="dash"></span>
                     </div>
                     <div className="hangman-count">6 letters</div>
