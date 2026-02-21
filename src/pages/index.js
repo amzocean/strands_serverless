@@ -384,7 +384,7 @@ export default function Home() {
       <div className="intro">
         <p className="intro-eyebrow">A Little Trivia First</p>
         <h1>Test your memory.<br /><em>Win 10 raffle tickets.</em></h1>
-        <p>Cast your mind back to last year&#39;s Eid Milan. Crack either clue, RSVP with your answer, and if you&#39;re one of the first two — the tickets are yours.</p>
+        <p>Cast your mind back to last year&#39;s Eid Milan. Crack either clue, RSVP with your answer, and if you&#39;re one of the first 10  — the tickets are yours.</p>
       </div>
 
       {/* GAME CARD */}
@@ -509,7 +509,7 @@ export default function Home() {
           </span>
         </a>
         <div className="cta-urgency">
-          ⚡ <strong>First 2 people</strong> to answer correctly &amp; RSVP win the prize!
+          ⚡ <strong>First 10 people</strong> to answer correctly &amp; RSVP win the prize!
         </div>
       </div>
 
