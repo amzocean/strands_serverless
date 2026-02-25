@@ -244,8 +244,8 @@ export default function Home() {
         /* ── CTA ── */
         .cta-section {
           text-align: center;
-          padding: 0 16px 72px;
-          animation: fadeIn 1s 1s ease both;
+          padding: 0 16px 36px;
+          animation: fadeIn 1s 0.5s ease both;
           opacity: 0;
         }
         .cta-eyebrow {
@@ -367,6 +367,25 @@ export default function Home() {
         <div className="divider-line"></div>
       </div>
 
+      {/* CTA — moved to front and center */}
+      <div className="cta-section">
+        <p className="cta-eyebrow">Think you remember? Don&#39;t overthink it.</p>
+        <a
+          className="cta-btn"
+          href="https://docs.google.com/forms/d/e/1FAIpQLSdjXgG5pCiGxWFSOLhGWhe1RiIzhJ1TJF09E4tvyXZMxVFH6w/viewform?usp=header"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="cta-inner">
+            RSVP &amp; Claim Your Tickets
+            <span className="cta-badge">+10 Tickets</span>
+          </span>
+        </a>
+        <div className="cta-urgency">
+          ⚡ <strong>First 10 people</strong> to answer correctly &amp; RSVP win the prize!
+        </div>
+      </div>
+
       {/* INTRO */}
       <div className="intro">
         <p className="intro-eyebrow">A Little Trivia First</p>
@@ -479,25 +498,6 @@ export default function Home() {
             </div>
 
           </div>
-        </div>
-      </div>
-
-      {/* CTA */}
-      <div className="cta-section">
-        <p className="cta-eyebrow">Think you remember? Don&#39;t overthink it.</p>
-        <a
-          className="cta-btn"
-          href="https://docs.google.com/forms/d/e/1FAIpQLSdjXgG5pCiGxWFSOLhGWhe1RiIzhJ1TJF09E4tvyXZMxVFH6w/viewform?usp=header"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span className="cta-inner">
-            RSVP &amp; Claim Your Tickets
-            <span className="cta-badge">+10 Tickets</span>
-          </span>
-        </a>
-        <div className="cta-urgency">
-          ⚡ <strong>First 10 people</strong> to answer correctly &amp; RSVP win the prize!
         </div>
       </div>
 
