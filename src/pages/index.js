@@ -100,11 +100,11 @@ export default function Home() {
           background: var(--green-dark);
           color: white;
           font-family: 'Cormorant Garamond', serif;
-          font-size: 26px;
+          font-size: 32px;
           font-weight: 600;
           font-style: italic;
-          min-height: 68px;
-          padding: 18px 24px;
+          min-height: 84px;
+          padding: 22px 28px;
           border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.5px;
@@ -309,7 +309,7 @@ export default function Home() {
           rel="noopener noreferrer"
         >
           <span className="cta-inner">
-            RSVP &amp; Claim Your Tickets
+            ✏️ Sign Up
           </span>
         </a>
       </div>
@@ -324,7 +324,7 @@ export default function Home() {
       {/* CAPTION CONTEST */}
       <div className="caption-section">
         <div className="caption-header">
-          <span className="caption-eyebrow">📸 Caption Contest</span>
+          <span className="caption-eyebrow">📸 Also — grab extra raffle tickets</span>
           <h2 className="caption-title">What&#39;s going on here?<br /><em>Win 10 raffle tickets.</em></h2>
           <p className="caption-desc">Drop your funniest caption on this photo from last year&#39;s Eid Milan. The top 3 most liked comments each win 10 raffle tickets — tap the photo to go to Instagram.</p>
         </div>
