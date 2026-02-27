@@ -5,7 +5,10 @@ export default function Home() {
     <>
       <Head>
         <meta charSet="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#1C3A28" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <title>Eid Milan 1447H</title>
         <link
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;600;700&display=swap"
@@ -26,7 +29,8 @@ export default function Home() {
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html { margin: 0; padding: 0; }
+        html { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
+
         body {
           margin: 0 !important;
           padding: 0 !important;
@@ -36,322 +40,250 @@ export default function Home() {
           min-height: 100vh;
           overflow-x: hidden;
           -webkit-font-smoothing: antialiased;
+          overscroll-behavior-y: none;
         }
 
         /* ── BANNER ── */
         .banner-section {
           display: block;
-          width: 100vw;
+          width: 100%;
           margin: 0;
           padding: 0;
           line-height: 0;
           font-size: 0;
-          position: relative;
-          left: 0;
-          top: 0;
-          animation: riseIn 1s cubic-bezier(0.16,1,0.3,1) both;
+          animation: riseIn 0.8s cubic-bezier(0.16,1,0.3,1) both;
         }
         .banner-section img {
           display: block;
           width: 100%;
           height: auto;
-          margin: 0;
-          padding: 0;
-          border: none;
-          border-radius: 0;
-          box-shadow: none;
+          max-height: 60vw;
+          object-fit: cover;
+          object-position: center;
         }
 
         /* ── DIVIDER ── */
         .divider {
           display: flex;
           align-items: center;
-          gap: 14px;
-          max-width: 340px;
-          margin: 36px auto 28px;
-          padding: 0 20px;
-          animation: fadeIn 1s 0.4s ease both;
+          gap: 12px;
+          margin: 28px auto 24px;
+          padding: 0 24px;
+          animation: fadeIn 0.8s 0.3s ease both;
           opacity: 0;
         }
         .divider-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
-        .divider-star { color: var(--gold); font-size: 12px; letter-spacing: 5px; }
-
-        /* ── INTRO ── */
-        .intro {
-          text-align: center;
-          max-width: 480px;
-          margin: 0 auto 36px;
-          padding: 0 20px;
-          animation: fadeIn 1s 0.6s ease both;
-          opacity: 0;
-        }
-        .intro-eyebrow {
-          font-size: 9px; font-weight: 700; letter-spacing: 4px;
-          text-transform: uppercase; color: var(--gold); margin-bottom: 12px;
-        }
-        .intro h1 {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(26px, 7vw, 42px);
-          font-weight: 600; line-height: 1.25;
-          color: var(--green-dark); margin-bottom: 14px;
-        }
-        .intro h1 em { font-style: italic; color: var(--gold); }
-        .intro p {
-          font-size: 13px; line-height: 1.85; color: var(--muted); font-weight: 300;
-        }
-
-        /* ── GAME CARD ── */
-        .game-card {
-          max-width: 800px;
-          margin: 0 auto 36px;
-          padding: 0 16px;
-          animation: fadeIn 1s 0.8s ease both;
-          opacity: 0;
-        }
-        .game-inner {
-          background: white;
-          border: 1px solid rgba(201,168,76,0.2);
-          border-radius: 4px;
-          overflow: hidden;
-          box-shadow: 0 4px 32px rgba(0,0,0,0.07);
-        }
-
-        .game-header {
-          background: linear-gradient(135deg, var(--green-dark), #254D38);
-          padding: 18px 20px;
-        }
-        .game-tag {
-          font-size: 9px; font-weight: 700; letter-spacing: 3px;
-          text-transform: uppercase; color: var(--gold-light);
-          border: 1px solid rgba(201,168,76,0.35);
-          padding: 3px 10px; border-radius: 20px;
-          display: inline-block; margin-bottom: 8px;
-        }
-        .game-header h2 {
-          font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(16px, 5vw, 22px);
-          font-weight: 600; color: white; line-height: 1.35;
-        }
-
-        .game-body { padding: 24px 20px; }
-
-        /* ── CLUES ── */
-        .clue-section {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          margin-bottom: 24px;
-        }
-
-        .clue-block {
-          background: #FDFAF3;
-          border: 1px solid rgba(201,168,76,0.15);
-          border-radius: 4px;
-          padding: 24px;
-          position: relative;
-        }
-        .clue-block::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 2px;
-          background: linear-gradient(90deg, var(--gold), var(--gold-light));
-          border-radius: 4px 4px 0 0;
-        }
-        .clue-label {
-          font-size: 9px; font-weight: 700; letter-spacing: 3px;
-          text-transform: uppercase; color: var(--gold);
-          margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
-        }
-        .clue-label::after { content: ''; flex: 1; height: 1px; background: rgba(201,168,76,0.25); }
-
-        .emoji-display {
-          font-size: 44px;
-          letter-spacing: 6px;
-          text-align: center;
-          margin: 14px 0 20px;
-          line-height: 1;
-          animation: float 3s ease-in-out infinite;
-          display: block;
-        }
-        .emoji-breakdown {
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-        .emoji-row {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          font-size: 12.5px;
-          color: var(--muted);
-          line-height: 1.5;
-        }
-        .emoji-row .e { font-size: 22px; line-height: 1.2; flex-shrink: 0; }
-        .emoji-row .arrow { color: var(--gold); font-size: 10px; flex-shrink: 0; margin-top: 3px; }
-
-        /* ── HANGMAN DASHES ── */
-        .hangman-wrap {
-          display: flex;
-          align-items: flex-end;
-          justify-content: center;
-          gap: 8px;
-          margin-top: 26px;
-          flex-wrap: nowrap;
-        }
-        .hangman-group {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 6px;
-        }
-        .hangman-dashes {
-          display: flex;
-          gap: 5px;
-          align-items: flex-end;
-        }
-        .dash {
-          display: block;
-          width: 18px;
-          height: 2px;
-          background: var(--gold);
-          border-radius: 2px;
-        }
-        .hangman-space {
-          width: 10px;
-          flex-shrink: 0;
-        }
-        .hangman-count {
-          font-size: 9px;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          color: var(--muted);
-          opacity: 0.6;
-          font-weight: 600;
-          white-space: nowrap;
-        }
-
-        /* ── SEPARATOR ── */
-        .card-sep {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 0;
-        }
-        .card-sep-line { flex: 1; height: 1px; background: rgba(201,168,76,0.2); }
-        .card-sep-text { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--gold); font-weight: 600; white-space: nowrap; }
+        .divider-star { color: var(--gold); font-size: 11px; letter-spacing: 4px; white-space: nowrap; }
 
         /* ── CTA ── */
         .cta-section {
           text-align: center;
-          padding: 0 16px 36px;
-          animation: fadeIn 1s 0.5s ease both;
+          padding: 0 16px 32px;
+          animation: fadeIn 0.8s 0.4s ease both;
           opacity: 0;
         }
         .cta-eyebrow {
-          font-size: 9px; letter-spacing: 3.5px; text-transform: uppercase;
-          color: var(--muted); margin-bottom: 20px; font-weight: 600;
+          font-size: 10px;
+          letter-spacing: 2.5px;
+          text-transform: uppercase;
+          color: var(--muted);
+          margin-bottom: 16px;
+          font-weight: 600;
+          display: block;
+          line-height: 1.6;
         }
         .cta-btn {
-          display: block;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           position: relative;
           background: var(--green-dark);
           color: white;
           font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(20px, 5.5vw, 28px);
+          font-size: 26px;
           font-weight: 600;
           font-style: italic;
-          padding: 20px 24px;
-          border-radius: 4px;
+          min-height: 68px;
+          padding: 18px 24px;
+          border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.5px;
-          transition: all 0.3s ease;
           box-shadow: 0 6px 24px rgba(28,58,40,0.35);
           overflow: hidden;
-          animation: ctaBob 3s ease-in-out infinite;
           width: 100%;
-          max-width: 480px;
+          max-width: 500px;
           margin: 0 auto;
-        }
-        .cta-btn::before {
-          content: '';
-          position: absolute; inset: 0;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-          transform: translateX(-100%);
-          animation: ctaSweep 3s ease-in-out infinite;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
         }
         .cta-btn::after {
           content: '';
           position: absolute; bottom: 0; left: 0;
-          width: 100%; height: 3px;
+          width: 100%; height: 4px;
           background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
           background-size: 200%;
           animation: goldShimmer 2s linear infinite;
         }
         .cta-btn:active {
-          transform: scale(0.98);
-          box-shadow: 0 3px 12px rgba(28,58,40,0.3);
-          animation: none;
+          background: #254D38;
+          transform: scale(0.97);
+          box-shadow: 0 2px 10px rgba(28,58,40,0.3);
         }
         .cta-inner {
           position: relative; z-index: 1;
           display: flex; align-items: center;
-          justify-content: center; gap: 12px; flex-wrap: wrap;
+          justify-content: center; gap: 10px;
         }
-        .cta-badge {
-          background: var(--gold); color: white;
-          font-family: 'Montserrat', sans-serif; font-style: normal;
-          font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
-          text-transform: uppercase; padding: 4px 12px; border-radius: 20px;
+
+        /* ── CAPTION SECTION ── */
+        .caption-section {
+          max-width: 600px;
+          margin: 0 auto 48px;
+          padding: 0 16px;
+          animation: fadeIn 0.8s 0.6s ease both;
+          opacity: 0;
         }
-        .cta-urgency {
-          margin-top: 16px;
-          font-size: 11px; letter-spacing: 1px;
-          color: var(--green-dark); font-weight: 700;
-          line-height: 1.6;
-          padding: 10px 16px;
-          background: rgba(201,168,76,0.12);
+
+        .caption-header {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .caption-eyebrow {
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          color: var(--gold);
+          margin-bottom: 10px;
+          display: block;
+        }
+        .caption-title {
+          font-family: 'Cormorant Garamond', serif;
+          font-size: clamp(28px, 8vw, 40px);
+          font-weight: 600;
+          line-height: 1.25;
+          color: var(--green-dark);
+          margin-bottom: 12px;
+        }
+        .caption-title em { font-style: italic; color: var(--gold); }
+        .caption-desc {
+          font-size: 14px;
+          line-height: 1.8;
+          color: var(--muted);
+          font-weight: 400;
+        }
+
+        .caption-img-wrap {
+          position: relative;
+          display: block;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.15);
           border: 1px solid rgba(201,168,76,0.3);
-          border-radius: 4px;
-          display: inline-block;
-          max-width: 480px;
-          width: 100%;
+          margin-bottom: 16px;
+          text-decoration: none;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
         }
-        .cta-urgency strong { color: var(--gold); }
+        .caption-img-wrap:active { opacity: 0.88; }
+        .caption-img-wrap img {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+        .caption-img-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(28,58,40,0.65) 0%, transparent 55%);
+          display: flex;
+          align-items: flex-end;
+          padding: 18px;
+          pointer-events: none;
+        }
+        .caption-img-overlay-text {
+          color: white;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 17px;
+          font-style: italic;
+          letter-spacing: 0.3px;
+          line-height: 1.4;
+        }
+
+        /* ── INSTAGRAM BUTTON ── */
+        .caption-actions {
+          margin-bottom: 14px;
+        }
+        .ig-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          width: 100%;
+          background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+          color: white;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          min-height: 58px;
+          padding: 16px 24px;
+          border-radius: 6px;
+          text-decoration: none;
+          box-shadow: 0 4px 18px rgba(131,58,180,0.3);
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .ig-btn:active {
+          opacity: 0.85;
+          transform: scale(0.98);
+        }
+        .ig-btn svg {
+          width: 20px; height: 20px; fill: white; flex-shrink: 0;
+        }
+
+        .ig-note {
+          font-size: 13px;
+          color: var(--muted);
+          text-align: center;
+          line-height: 1.75;
+          padding: 14px 16px;
+          background: rgba(201,168,76,0.08);
+          border: 1px solid rgba(201,168,76,0.2);
+          border-radius: 6px;
+        }
+        .ig-note strong { color: var(--green-dark); }
 
         /* ── FOOTER ── */
         footer {
           border-top: 1px solid rgba(201,168,76,0.2);
-          padding: 24px 16px; text-align: center;
-          font-size: 11px; color: var(--muted); letter-spacing: 1.5px; font-weight: 300;
-          line-height: 2;
+          padding: 28px 16px;
+          padding-bottom: calc(28px + env(safe-area-inset-bottom));
+          text-align: center;
+          font-size: 12px;
+          color: var(--muted);
+          letter-spacing: 1.5px;
+          font-weight: 300;
+          line-height: 2.2;
         }
         footer span { color: var(--gold); margin: 0 6px; }
 
         /* ── ANIMATIONS ── */
         @keyframes riseIn {
-          from { opacity: 0; transform: translateY(-14px); }
+          from { opacity: 0; transform: translateY(-10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(12px); }
           to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50%       { transform: translateY(-6px); }
-        }
-        @keyframes ctaBob {
-          0%, 100% { transform: translateY(0); }
-          50%       { transform: translateY(-7px); }
-        }
-        @keyframes ctaSweep {
-          0%        { transform: translateX(-100%); }
-          60%, 100% { transform: translateX(200%); }
         }
         @keyframes goldShimmer {
           0%   { background-position: 0%; }
           100% { background-position: 200%; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
         }
       `}</style>
 
@@ -367,9 +299,9 @@ export default function Home() {
         <div className="divider-line"></div>
       </div>
 
-      {/* CTA — moved to front and center */}
+      {/* CTA */}
       <div className="cta-section">
-        <p className="cta-eyebrow">Think you remember? Don&#39;t overthink it.</p>
+        <span className="cta-eyebrow">Secure your spot — it only takes a minute</span>
         <a
           className="cta-btn"
           href="https://docs.google.com/forms/d/e/1FAIpQLSdjXgG5pCiGxWFSOLhGWhe1RiIzhJ1TJF09E4tvyXZMxVFH6w/viewform?usp=header"
@@ -378,127 +310,55 @@ export default function Home() {
         >
           <span className="cta-inner">
             RSVP &amp; Claim Your Tickets
-            <span className="cta-badge">+10 Tickets</span>
           </span>
         </a>
-        <div className="cta-urgency">
-          ⚡ <strong>First 10 people</strong> to answer correctly &amp; RSVP win the prize!
-        </div>
       </div>
 
-      {/* INTRO */}
-      <div className="intro">
-        <p className="intro-eyebrow">A Little Trivia First</p>
-        <h1>Test your memory.<br /><em>Win 10 raffle tickets.</em></h1>
-        <p>Cast your mind back to last year&#39;s Eid Milan. Crack either clue, RSVP with your answer, and if you&#39;re one of the first 10 — the tickets are yours.</p>
+      {/* DIVIDER */}
+      <div className="divider">
+        <div className="divider-line"></div>
+        <div className="divider-star">✦ ✦ ✦</div>
+        <div className="divider-line"></div>
       </div>
 
-      {/* GAME CARD */}
-      <div className="game-card">
-        <div className="game-inner">
-
-          <div className="game-header">
-            <span className="game-tag">🏆 Eid Milan Trivia</span>
-            <h2>What was one of last year&#39;s Eid Milan grand raffle prizes?</h2>
-          </div>
-
-          <div className="game-body">
-            <div className="clue-section">
-
-              {/* CLUE 1: Ninja Cooker — 5 + 6 dashes */}
-              <div className="clue-block">
-                <div className="clue-label">Clue 1 — Emoji Code</div>
-                <span className="emoji-display">🥷🌀🔥💨</span>
-                <div className="emoji-breakdown">
-                  <div className="emoji-row">
-                    <span className="e">🥷</span>
-                    <span className="arrow">→</span>
-                    <span>Not a chef, not a samurai — but the brand name would fit either</span>
-                  </div>
-                  <div className="emoji-row">
-                    <span className="e">🌀🔥💨</span>
-                    <span className="arrow">→</span>
-                    <span>A kitchen multitasker so good, it made your oven jealous</span>
-                  </div>
-                </div>
-                <div className="hangman-wrap">
-                  <div className="hangman-group">
-                    <div className="hangman-dashes">
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                    </div>
-                    <div className="hangman-count">5 letters</div>
-                  </div>
-                  <div className="hangman-space"></div>
-                  <div className="hangman-group">
-                    <div className="hangman-dashes">
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                    </div>
-                    <div className="hangman-count">6 letters</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* CLUE 2: Igloo Cooler — 5 + 6 dashes */}
-              <div className="clue-block">
-                <div className="clue-label">Clue 2 — Emoji Code</div>
-                <span className="emoji-display">🧊🏠❄️🧺</span>
-                <div className="emoji-breakdown">
-                  <div className="emoji-row">
-                    <span className="e">🧊🏠</span>
-                    <span className="arrow">→</span>
-                    <span>An architect&#39;s nightmare — no wood, no bricks, just subzero engineering</span>
-                  </div>
-                  <div className="emoji-row">
-                    <span className="e">❄️🧺</span>
-                    <span className="arrow">→</span>
-                    <span>It never cooks, only preserves — your drinks&#39; best friend on a hot day</span>
-                  </div>
-                </div>
-                <div className="hangman-wrap">
-                  <div className="hangman-group">
-                    <div className="hangman-dashes">
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                    </div>
-                    <div className="hangman-count">5 letters</div>
-                  </div>
-                  <div className="hangman-space"></div>
-                  <div className="hangman-group">
-                    <div className="hangman-dashes">
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                      <span className="dash"></span>
-                    </div>
-                    <div className="hangman-count">6 letters</div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="card-sep">
-              <div className="card-sep-line"></div>
-              <div className="card-sep-text">Name either prize in the RSVP form</div>
-              <div className="card-sep-line"></div>
-            </div>
-
-          </div>
+      {/* CAPTION CONTEST */}
+      <div className="caption-section">
+        <div className="caption-header">
+          <span className="caption-eyebrow">📸 Caption Contest</span>
+          <h2 className="caption-title">What&#39;s going on here?<br /><em>Win 10 raffle tickets.</em></h2>
+          <p className="caption-desc">Drop your funniest caption on this photo from last year&#39;s Eid Milan. The top 3 most liked comments each win 10 raffle tickets — tap the photo to go to Instagram.</p>
         </div>
+
+        <a
+          className="caption-img-wrap"
+          href="https://www.instagram.com/eidmilanseattle?igsh=dHRjcHhtMm14Nzc0"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open Instagram to leave a caption"
+        >
+          <img src="/caption-pic.jpeg" alt="Caption this moment from Eid Milan" />
+          <div className="caption-img-overlay">
+            <span className="caption-img-overlay-text">Tap to leave your caption on Instagram →</span>
+          </div>
+        </a>
+
+        <div className="caption-actions">
+          <a
+            className="ig-btn"
+            href="https://www.instagram.com/eidmilanseattle?igsh=dHRjcHhtMm14Nzc0"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+            💬 Comment Here
+          </a>
+        </div>
+
+        <p className="ig-note">
+          🏆 <strong>Top 3 most liked comments</strong> on the Instagram post each win <strong>10 raffle tickets</strong>
+        </p>
       </div>
 
       {/* FOOTER */}
