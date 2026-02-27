@@ -309,7 +309,7 @@ export default function Home() {
           rel="noopener noreferrer"
         >
           <span className="cta-inner">
-            ✏️ Sign Up
+            ✏️ Sign Up for Eid Milan Here!
           </span>
         </a>
       </div>
