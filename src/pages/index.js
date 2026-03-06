@@ -339,7 +339,7 @@ export default function Home() {
         <div className="caption-header">
           <span className="caption-eyebrow">🎩 Also — grab extra raffle tickets</span>
           <h2 className="caption-title">Can you solve the challenge?<br /><em>Win 5 raffle tickets.</em></h2>
-          <p className="caption-quote">&#34;Me mardo na sar no taaj chu&#34;</p>
+          <p className="caption-quote">&#34;Me mardo na sar no taaj chu. Can you count me in the picture below? &#34;</p>
           <p className="caption-desc" style={{marginTop: '16px'}}>Figure out what&#39;s being described, count how many you see in the photo below, and comment your answer on Instagram. The first 5 people with the correct count each win 5 raffle tickets!</p>
         </div>
 
