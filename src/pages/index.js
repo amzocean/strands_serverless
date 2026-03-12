@@ -135,6 +135,102 @@ export default function Home() {
           justify-content: center; gap: 10px;
         }
 
+        /* ── STALLS ── */
+        .stalls-wrap {
+          max-width: 500px;
+          margin: 36px auto 0;
+          border: 1px solid rgba(201,168,76,0.3);
+          border-radius: 10px;
+          overflow: hidden;
+          background: white;
+          box-shadow: 0 4px 20px rgba(28,58,40,0.08);
+        }
+        .stalls-header {
+          background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04));
+          border-bottom: 1px solid rgba(201,168,76,0.25);
+          padding: 14px 20px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .stalls-header-icon { font-size: 18px; line-height: 1; }
+        .stalls-header-text {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: var(--gold);
+        }
+        .stalls-body {
+          padding: 16px 20px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .stalls-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+          background: var(--green);
+          color: white;
+          font-family: 'Cormorant Garamond', serif;
+          font-size: 22px;
+          font-weight: 600;
+          font-style: italic;
+          min-height: 62px;
+          padding: 14px 20px;
+          border-radius: 6px;
+          text-decoration: none;
+          letter-spacing: 0.3px;
+          box-shadow: 0 4px 16px rgba(45,90,64,0.3);
+          overflow: hidden;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .stalls-btn::after {
+          content: '';
+          position: absolute; bottom: 0; left: 0;
+          width: 100%; height: 3px;
+          background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
+          background-size: 200%;
+          animation: goldShimmer 2s linear infinite;
+        }
+        .stalls-btn:active { background: #245035; transform: scale(0.97); }
+        .stalls-btn-inner {
+          position: relative; z-index: 1;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .stalls-faq {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 11px 14px;
+          border-radius: 6px;
+          background: rgba(201,168,76,0.07);
+          border: 1px solid rgba(201,168,76,0.2);
+          text-decoration: none;
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        .stalls-faq:active { background: rgba(201,168,76,0.15); }
+        .stalls-faq-icon { font-size: 16px; flex-shrink: 0; }
+        .stalls-faq-text { flex: 1; text-align: left; }
+        .stalls-faq-label {
+          display: block;
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--green-dark);
+          letter-spacing: 0.3px;
+        }
+        .stalls-faq-sub {
+          display: block;
+          font-size: 10px;
+          color: var(--muted);
+          margin-top: 1px;
+        }
+        .stalls-faq-arrow { color: var(--gold); font-size: 14px; flex-shrink: 0; }
+
         /* ── CAPTION SECTION ── */
         .caption-section {
           max-width: 600px;
@@ -322,9 +418,43 @@ export default function Home() {
           rel="noopener noreferrer"
         >
           <span className="cta-inner">
-            ✏️ Sign Up for Eid Milan Here!
+            Sign Up for Eid Milan Event Here!
           </span>
         </a>
+
+        {/* STALLS */}
+        <div className="stalls-wrap">
+          <div className="stalls-header">
+            <span className="stalls-header-icon">🏪</span>
+            <span className="stalls-header-text">Interested in running a stall?</span>
+          </div>
+          <div className="stalls-body">
+            <a
+              className="stalls-btn"
+              href="https://forms.gle/PmcrihKq94aLMNhh7"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="stalls-btn-inner">
+                🛍️ Eid Milan Stalls Sign Up
+              </span>
+            </a>
+            <a
+              className="stalls-faq"
+              href="https://docs.google.com/document/d/1mvHfHqxG7BVg3f_0mpE9Wu2CHgOukS5iOPNH1TIJm5I/edit?usp=drivesdk"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="stalls-faq-icon">📄</span>
+              <span className="stalls-faq-text">
+                <span className="stalls-faq-label">Eid Milan Stalls FAQ</span>
+                <span className="stalls-faq-sub">Questions about running a stall? Read this first.</span>
+              </span>
+              <span className="stalls-faq-arrow">›</span>
+            </a>
+            <img src="/stall.jpg" alt="Eid Milan Stall" style={{display:'block', width:'100%', borderRadius:'6px', marginTop:'4px'}} />
+          </div>
+        </div>
       </div>
 
       {/* DIVIDER */}
@@ -338,8 +468,8 @@ export default function Home() {
       <div className="caption-section">
         <div className="caption-header">
           <span className="caption-eyebrow">🎩 Also — grab extra raffle tickets</span>
-          <h2 className="caption-title">Can you solve the challenge?<br /><em>Win 5 raffle tickets.</em></h2>
-          <p className="caption-quote">&#34;Me mardo na sar no taaj chu. Can you count me in the picture below? &#34;</p>
+          <h2 className="caption-title">Can you solve the riddle?<br /><em>Win 5 raffle tickets.</em></h2>
+          <p className="caption-quote">&#34;Me mardo na sar no taaj chu&#34;</p>
           <p className="caption-desc" style={{marginTop: '16px'}}>Figure out what&#39;s being described, count how many you see in the photo below, and comment your answer on Instagram. The first 5 people with the correct count each win 5 raffle tickets!</p>
         </div>
 
