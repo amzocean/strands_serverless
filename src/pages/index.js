@@ -100,11 +100,11 @@ export default function Home() {
           background: var(--green-dark);
           color: white;
           font-family: 'Cormorant Garamond', serif;
-          font-size: 32px;
+          font-size: 26px;
           font-weight: 600;
           font-style: italic;
-          min-height: 84px;
-          padding: 22px 28px;
+          min-height: 72px;
+          padding: 16px 20px;
           border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.5px;
