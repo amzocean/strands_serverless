@@ -246,8 +246,8 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           position: relative;
-          background: var(--green);
-          color: white;
+          background: #c8c8c8;
+          color: #888;
           font-family: 'Cormorant Garamond', serif;
           font-size: 22px;
           font-weight: 600;
@@ -257,23 +257,27 @@ export default function Home() {
           border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.3px;
-          box-shadow: 0 4px 16px rgba(45,90,64,0.3);
+          box-shadow: none;
           overflow: hidden;
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
+          pointer-events: none;
+          cursor: not-allowed;
         }
-        .stalls-btn::after {
-          content: '';
-          position: absolute; bottom: 0; left: 0;
-          width: 100%; height: 3px;
-          background: linear-gradient(90deg, var(--gold), var(--gold-light), var(--gold));
-          background-size: 200%;
-          animation: goldShimmer 2s linear infinite;
-        }
-        .stalls-btn:active { background: #245035; transform: scale(0.97); }
+        .stalls-btn::after { display: none; }
         .stalls-btn-inner {
           position: relative; z-index: 1;
           display: flex; align-items: center; gap: 8px;
+        }
+        .stalls-btn-closed {
+          font-family: 'Montserrat', sans-serif;
+          font-size: 10px;
+          font-style: normal;
+          font-weight: 700;
+          letter-spacing: 1.5px;
+          text-transform: uppercase;
+          color: #fff;
+          background: rgba(0,0,0,0.15);
+          padding: 3px 8px;
+          border-radius: 4px;
         }
         .stalls-faq {
           display: flex;
@@ -527,16 +531,11 @@ export default function Home() {
             <span className="stalls-header-text">Interested in running a stall?</span>
           </div>
           <div className="stalls-body">
-            <a
-              className="stalls-btn"
-              href="https://forms.gle/PmcrihKq94aLMNhh7"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <div className="stalls-btn stalls-btn-disabled">
               <span className="stalls-btn-inner">
-                🛍️ Eid Milan Stalls Sign Up
+                🛍️ Eid Milan Stalls Sign Up — Closed
               </span>
-            </a>
+            </div>
             <a
               className="stalls-faq"
               href="https://docs.google.com/document/d/1mvHfHqxG7BVg3f_0mpE9Wu2CHgOukS5iOPNH1TIJm5I/edit?usp=drivesdk"
