@@ -28,9 +28,7 @@ export default function Home() {
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
         html { margin: 0; padding: 0; -webkit-text-size-adjust: 100%; }
-
         body {
           margin: 0 !important;
           padding: 0 !important;
@@ -66,7 +64,7 @@ export default function Home() {
         .event-info {
           background: linear-gradient(180deg, #fdf8ee 0%, #f5ede0 100%);
           border-bottom: 1px solid rgba(201,168,76,0.25);
-          padding: 18px 16px;
+          padding: 18px 12px;
           display: flex;
           align-items: stretch;
           justify-content: center;
@@ -88,7 +86,7 @@ export default function Home() {
           width: 1px;
           height: 44px;
           background: rgba(201,168,76,0.4);
-          margin: 0 10px;
+          margin: 0 8px;
           flex-shrink: 0;
           align-self: center;
         }
@@ -106,7 +104,7 @@ export default function Home() {
         }
         .event-info-main {
           font-family: 'Cormorant Garamond', serif;
-          font-size: clamp(15px, 3.8vw, 22px);
+          font-size: clamp(13px, 3.2vw, 20px);
           font-weight: 600;
           color: var(--green-dark);
           text-align: center;
@@ -114,6 +112,8 @@ export default function Home() {
           white-space: normal;
           word-break: break-word;
           width: 100%;
+          overflow-wrap: break-word;
+          hyphens: auto;
         }
         .event-info-link {
           text-decoration: none;
@@ -121,6 +121,7 @@ export default function Home() {
           flex-direction: column;
           align-items: center;
           gap: 3px;
+          max-width: 100%;
         }
         .event-info-map-inline {
           font-size: clamp(10px, 2.5vw, 12px);
@@ -137,6 +138,7 @@ export default function Home() {
           text-underline-offset: 3px;
           text-decoration-color: rgba(45,90,64,0.4);
         }
+
         .divider {
           display: flex;
           align-items: center;
@@ -174,11 +176,11 @@ export default function Home() {
           background: var(--green-dark);
           color: white;
           font-family: 'Cormorant Garamond', serif;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 600;
           font-style: italic;
-          min-height: 62px;
-          padding: 14px 24px;
+          min-height: 52px;
+          padding: 12px 20px;
           border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.5px;
@@ -246,14 +248,14 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           position: relative;
-          background: #c8c8c8;
-          color: #888;
+          background: #d0d0d0;
+          color: #999;
           font-family: 'Cormorant Garamond', serif;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 600;
           font-style: italic;
-          min-height: 62px;
-          padding: 14px 20px;
+          min-height: 52px;
+          padding: 12px 20px;
           border-radius: 6px;
           text-decoration: none;
           letter-spacing: 0.3px;
@@ -261,6 +263,8 @@ export default function Home() {
           overflow: hidden;
           pointer-events: none;
           cursor: not-allowed;
+          opacity: 0.7;
+          border: 1px dashed #bbb;
         }
         .stalls-btn::after { display: none; }
         .stalls-btn-inner {
@@ -317,7 +321,6 @@ export default function Home() {
           animation: fadeIn 0.8s 0.6s ease both;
           opacity: 0;
         }
-
         .caption-header {
           text-align: center;
           margin-bottom: 20px;
@@ -359,7 +362,6 @@ export default function Home() {
           text-align: left;
           line-height: 1.6;
         }
-
         .caption-img-wrap {
           position: relative;
           display: block;
@@ -428,7 +430,6 @@ export default function Home() {
         .ig-btn svg {
           width: 20px; height: 20px; fill: white; flex-shrink: 0;
         }
-
         .ig-note {
           font-size: 13px;
           color: var(--muted);
@@ -468,7 +469,6 @@ export default function Home() {
           0%   { background-position: 0%; }
           100% { background-position: 200%; }
         }
-
         @media (prefers-reduced-motion: reduce) {
           * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
         }
@@ -486,9 +486,7 @@ export default function Home() {
           <span className="event-info-label">Time</span>
           <span className="event-info-main">12:00 – 4:00 PM</span>
         </div>
-
         <div className="event-info-divider"></div>
-
         <div className="event-info-block">
           <span className="event-info-icon">📍</span>
           <span className="event-info-label">Venue</span>
@@ -531,9 +529,9 @@ export default function Home() {
             <span className="stalls-header-text">Interested in running a stall?</span>
           </div>
           <div className="stalls-body">
-            <div className="stalls-btn stalls-btn-disabled">
+            <div className="stalls-btn">
               <span className="stalls-btn-inner">
-                🛍️ Eid Milan Stalls Sign Up — Closed
+                🛍️ Stall Registration — Closed
               </span>
             </div>
             <a
@@ -569,7 +567,6 @@ export default function Home() {
           <p className="caption-quote">&#34;Me mardo na sar no taaj chu&#34;</p>
           <p className="caption-desc" style={{marginTop: '16px'}}>Figure out what&#39;s being described, count how many you see in the photo below, and comment your answer on Instagram. The first 5 people with the correct count each win 5 raffle tickets!</p>
         </div>
-
         <a
           className="caption-img-wrap"
           href="https://www.instagram.com/eidmilanseattle?igsh=dHRjcHhtMm14Nzc0"
@@ -582,7 +579,6 @@ export default function Home() {
             <span className="caption-img-overlay-text">Tap to comment your answer on Instagram →</span>
           </div>
         </a>
-
         <div className="caption-actions">
           <a
             className="ig-btn"
@@ -596,7 +592,6 @@ export default function Home() {
             💬 Comment Your Answer
           </a>
         </div>
-
         <p className="ig-note">
           🏆 <strong>First 5 correct answers</strong> on the Instagram post each win <strong>5 raffle tickets</strong>
         </p>
